@@ -19,6 +19,7 @@ tqdm = "^4.65.0"
 urllib3 = "^1.26.14"
 minio = "^7.1.13"
 python-telegram-bot = "^20.1"
+aiosqlite = "^0.18.0"
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^1.1.1"

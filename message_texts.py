@@ -1,5 +1,5 @@
 GREETNGS="""
-Hello it is product checker bot.
+Hello {username}, it is product checker bot.
 I can generate and store information about your products (e.g. food from the supermarket) from their photos. 
 So I can send notifications about the end of expiry date.
 

@@ -1,15 +1,14 @@
 CREATE TABLE bot_user(
-    bot_user_id INT PRIMARY KEY, 
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    telegram_id BIGINT NOY NULL
+    telegram_user_id BIGINT PRIMARY KEY,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
 CREATE TABLE product(
     product_id INT PRIMARY KEY,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMPNOT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     date_prod DATE,
     date_exp DATE,
     label_path VARCHAR(200),
-    bot_user_id INT NOT NULL,
-    FOREIGN KEY (bot_user_id) REFERENCES user (bot_user_id) 
+    telegram_user_id INT NOT NULL,
+    FOREIGN KEY (telegram_user_id) REFERENCES user (telegram_user_id) 
 );

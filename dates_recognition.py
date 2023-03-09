@@ -40,13 +40,13 @@ class Setting():
         blur_level : int = 3, 
         alpha : Optional[float] = None,
         beta : Optional[int] = None,
-        angle : int = None
+        angle : int = 0
     ) -> None:
         self._preblur = preblur
         self._dilate_iter = dilate_iter
         self._incr_bright = incr_bright
         self._blur_level = blur_level
-        self._thresh = np.ndarray(0)
+        self._thresh = np.zeros(0)
         self._recognized_text = ""
         self._alpha = alpha
         self._beta = beta

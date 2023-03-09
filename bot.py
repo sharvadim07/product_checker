@@ -10,28 +10,29 @@ from telegram.ext import (
 )
 
 import message_texts
+import config
 from dates_recognition import dates_recognition
 from dates_recognition import bytearray_to_img
+import entities
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
 )
 
-TELEGRAM_BOT_TOKEN="6101847387:AAF7aVMaAN5wSu8SA-azotGZI7j1qGHt1MI"
-DATA_BOT_TEST_DIR="data/bot_test"
 #TELEGRAM_BOT_TOKEN=os.getenv("TELEGRAM_BOT_TOKEN")
-
-if not TELEGRAM_BOT_TOKEN:
-    exit("Specify TELEGRAM_BOT_TOKEN variable!")
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.effective_chat:
         logging.error("update.effective_chat is None")
         return
+    if not update.effective_user:
+        logging.error("update.effective_user is None")
+        return
+    bot_user = await entities.get_add_bot_user(update.effective_user.id)
     await context.bot.send_message(
         chat_id=update.effective_chat.id, 
-        text=message_texts.GREETNGS
+        text=message_texts.GREETNGS.format(username = update.effective_user.username)
     )
 
 async def help(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -53,7 +54,7 @@ async def photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     photo = await update.message.photo[-1].get_file()
     downloaded_photo = await photo.download_as_bytearray()
     recognized_dates = dates_recognition(
-        bytearray_to_img(downloaded_photo), DATA_BOT_TEST_DIR
+        bytearray_to_img(downloaded_photo), config.DATA_BOT_TEST_DIR
     )
     if len(recognized_dates) > 0:
         await context.bot.send_message(
@@ -68,7 +69,10 @@ async def photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 if __name__ == '__main__':
-    application = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
+    if not config.TELEGRAM_BOT_TOKEN:
+        exit("Specify TELEGRAM_BOT_TOKEN variable!")
+
+    application = ApplicationBuilder().token(config.TELEGRAM_BOT_TOKEN).build()
     
     start_handler = CommandHandler('start', start)
     application.add_handler(start_handler)
