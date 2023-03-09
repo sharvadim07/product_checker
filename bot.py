@@ -1,6 +1,4 @@
 import os
-from collections import OrderedDict
-from datetime import date
 import logging
 from telegram import Update
 from telegram.ext import (
@@ -10,12 +8,10 @@ from telegram.ext import (
     MessageHandler, 
     filters
 )
-from io import BytesIO
-import numpy as np
+
 import message_texts
 from dates_recognition import dates_recognition
-import cv2
-from PIL import Image
+from dates_recognition import bytearray_to_img
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -47,11 +43,6 @@ async def help(update: Update, context: ContextTypes.DEFAULT_TYPE):
         text=message_texts.HELP
     )
 
-def recognize_dates(downloaded_photo : bytearray) -> OrderedDict[str, date]:
-    img = cv2.imdecode(np.frombuffer(downloaded_photo, np.uint8), cv2.IMREAD_COLOR)
-    Image.fromarray(img).save(f"{DATA_BOT_TEST_DIR}/recieved_image.png")
-    return dates_recognition(img, DATA_BOT_TEST_DIR)
-
 async def photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.effective_chat:
         logging.error("update.effective_chat is None")
@@ -61,8 +52,9 @@ async def photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     photo = await update.message.photo[-1].get_file()
     downloaded_photo = await photo.download_as_bytearray()
-    recognized_dates = recognize_dates(downloaded_photo)
-
+    recognized_dates = dates_recognition(
+        bytearray_to_img(downloaded_photo), DATA_BOT_TEST_DIR
+    )
     if len(recognized_dates) > 0:
         await context.bot.send_message(
             chat_id=update.effective_chat.id, 

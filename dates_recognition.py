@@ -1,9 +1,11 @@
 from typing import Tuple, List, Dict, Optional
+import logging
 import re
-import random
+# import random
 import numpy as np
 from tqdm import tqdm
 # from PIL import Image
+# from io import BytesIO
 from skimage import transform
 import cv2
 import pytesseract
@@ -15,6 +17,11 @@ from datetime import datetime
 from collections import OrderedDict
 from time import time
 from os import path
+
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=logging.INFO
+)
 
 DATE_PATTERNS = [
     r'\d{4}[-/.]\d{2}[-/.]\d{2}',  # matches yyyy/mm/dd format
@@ -102,6 +109,9 @@ class Setting():
 #     img = cv2.cvtColor(final_hsv, cv2.COLOR_HSV2BGR)
 #     return img
 
+def bytearray_to_img(downloaded_photo : bytearray) -> np.ndarray:
+    return cv2.imdecode(np.frombuffer(downloaded_photo, np.uint8), cv2.IMREAD_COLOR)
+
 def descew_image(img : np.ndarray, data_dir : str) -> Tuple[np.ndarray, Optional[np.float64]]:
     angle = determine_skew(img)
     # Rotation if angle not 0
@@ -137,7 +147,7 @@ def check_text(text : str, diff_years : int = 5, min_text_len : int = 6) -> Orde
             parsed_date = parse(date_str, dayfirst = True)
             if abs(date.today().year - parsed_date.year) <= diff_years:
                 res_parsed[date_str] = parsed_date
-                print(parsed_date)
+                logging.info(parsed_date)
         except ValueError:
             pass
     return res_parsed
@@ -264,7 +274,7 @@ def dates_recognition(
         max_number_dates : int = 2
     ) -> OrderedDict[str, date]:
     recognised_dates = OrderedDict() # type: OrderedDict
-
+    # Image.fromarray(img).save(f"{data_dir}/recieved_image.png")
     # image to gray, resizing, rotation
     img = img_initial_preparation(img, data_dir)
     
@@ -279,26 +289,26 @@ def dates_recognition(
         data_dir = data_dir,
         max_number_dates = max_number_dates
     )
-    print("\nrecognised_dates from full image:")
-    print(recognised_dates)
+    logging.info("recognised_dates from full image:")
+    logging.info(recognised_dates)
 
     # Check after full image recognition
     if len(recognised_dates) >= max_number_dates:
         recognised_dates = \
             filter_recognised_dates(recognised_dates = recognised_dates)
-        print("\nfiltered recognised_dates:")
-        print(recognised_dates)
+        logging.info("filtered recognised_dates:")
+        logging.info(recognised_dates)
         return recognised_dates
     elif len(recognised_dates) == 2:
         filtered_recognised_dates = \
             filter_recognised_dates(recognised_dates = recognised_dates)
         if len(filtered_recognised_dates) == 2:
-            print("\nfiltered recognised_dates:")
-            print(recognised_dates)
+            logging.info("filtered recognised_dates:")
+            logging.info(recognised_dates)
             return filtered_recognised_dates
 
     # Try to recognize from tiles image
-    print("\nwill try to recognize from tiles image...")
+    logging.info("will try to recognize from tiles image...")
     recognize_tiles_image(
         settings = settings, 
         recognised_dates = recognised_dates, 
@@ -306,12 +316,12 @@ def dates_recognition(
         max_number_dates = max_number_dates,
         settings_num = int(len(settings) / 4)
     )
-    print("\nrecognised_dates:")
-    print(recognised_dates)
+    logging.info("recognised_dates:")
+    logging.info(recognised_dates)
     recognised_dates = \
         filter_recognised_dates(recognised_dates = recognised_dates)
-    print("\nfiltered recognised_dates:")
-    print(recognised_dates)
+    logging.info("filtered recognised_dates:")
+    logging.info(recognised_dates)
     return recognised_dates
 
 def main():
@@ -323,4 +333,4 @@ if __name__ == "__main__":
     st = time()
     main()
     end = time()
-    print("Execution time: {:.6f} seconds".format(end - st))
+    logging.info("Execution time: {:.6f} seconds".format(end - st))
