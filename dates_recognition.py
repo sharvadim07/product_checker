@@ -3,7 +3,7 @@ import re
 import random
 import numpy as np
 from tqdm import tqdm
-# from PIL import Imagewhere
+# from PIL import Image
 from skimage import transform
 import cv2
 import pytesseract
@@ -16,13 +16,24 @@ from collections import OrderedDict
 from time import time
 from os import path
 
+DATE_PATTERNS = [
+    r'\d{4}[-/.]\d{2}[-/.]\d{2}',  # matches yyyy/mm/dd format
+    r'\d{2}[-/.]\d{2}[-/.]\d{4}',  # matches dd/mm/yyyy format
+    r'\d{2}[-/.]\d{2}[-/.]\d{2}',  # matches dd/mm/yy format
+]
+COMPILED_DATE_PATTERNS = [re.compile(patt) for patt in DATE_PATTERNS]
+OCR_CONFIG = "--psm 11 --oem 3 -c tessedit_char_whitelist=-./0123456789"
+
 class Setting():
     def __init__(
         self, 
         preblur : bool = False, 
-        dilate_iter : int = 8, 
+        dilate_iter : int = 0, 
         incr_bright : int = 0,
-        blur_level : int = 5
+        blur_level : int = 3, 
+        alpha : Optional[float] = None,
+        beta : Optional[int] = None,
+        angle : int = None
     ) -> None:
         self._preblur = preblur
         self._dilate_iter = dilate_iter
@@ -30,6 +41,9 @@ class Setting():
         self._blur_level = blur_level
         self._thresh = np.ndarray(0)
         self._recognized_text = ""
+        self._alpha = alpha
+        self._beta = beta
+        self._angle = angle
     @property
     def thresh(self) -> np.ndarray:
         return self._thresh
@@ -39,29 +53,34 @@ class Setting():
         img : np.ndarray,
     ) -> None:
         img = img.copy()
+        # Rotate
+        if self._angle > 0:
+            img = (transform.rotate(img, self._angle, mode = "symmetric") * 255).astype(np.uint8)
         # Increasing brightness
-        if self._incr_bright > 0:
-            img = increase_brightness(img, value = self._incr_bright)
-        # image to gray
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        # if self._incr_bright > 0:
+        #     img = change_brightness(img, value = self._incr_bright)
+        # Brightness and contrast
+        cv2.convertScaleAbs(img, img, self._alpha, self._beta)
+        # Bluring
         if self._preblur:
-            # Bluring
             #gray = cv2.GaussianBlur(gray, (11, 11), 0)
             img = cv2.medianBlur(img, self._blur_level)
+        self._thresh = img
         # Applying thresholding 
         ret, self._thresh = cv2.threshold(img, 120, 255, cv2.THRESH_OTSU | cv2.THRESH_BINARY_INV)
-        # Padding
-        #self._thresh = cv2.copyMakeBorder(self._thresh, 20, 20, 20, 20, cv2.BORDER_CONSTANT, value=(0, 0, 0))
-        # Dilation
-        kernel = np.ones((2, 2), 'uint8')
-        # kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
-        self._thresh = cv2.dilate(self._thresh, kernel, iterations = self._dilate_iter)
-        # Bluring after dilation
-        #self._thresh = cv2.GaussianBlur(self._thresh, (9, 9), 0)
-        self._thresh = cv2.medianBlur(self._thresh, self._blur_level)
-        #self._thresh = cv2.bilateralFilter(self._thresh, 2, 200, 200)
-        # Thresholding after dilation + bluring
-        ret, self._thresh = cv2.threshold(self._thresh, 120, 255, cv2.THRESH_OTSU | cv2.THRESH_BINARY_INV)
+        # # Padding
+        # #self._thresh = cv2.copyMakeBorder(self._thresh, 20, 20, 20, 20, cv2.BORDER_CONSTANT, value=(0, 0, 0))
+        if self._dilate_iter > 0:
+            # Dilation
+            kernel = np.ones((2, 2), 'uint8')
+            # kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
+            self._thresh = cv2.dilate(self._thresh, kernel, iterations = self._dilate_iter)
+            # Bluring after dilation
+            #self._thresh = cv2.GaussianBlur(self._thresh, (9, 9), 0)
+            self._thresh = cv2.medianBlur(self._thresh, self._blur_level)
+            #self._thresh = cv2.bilateralFilter(self._thresh, 2, 200, 200)
+        # # Thresholding after dilation + bluring
+        # ret, self._thresh = cv2.threshold(self._thresh, 120, 255, cv2.THRESH_OTSU | cv2.THRESH_BINARY_INV)
     @property
     def recognized_text(self) -> str:
         return self._recognized_text
@@ -73,20 +92,19 @@ class Setting():
     def recognized_text_len(self) -> int:
         return self._recognized_text_len
     
+# def increase_brightness(img : np.ndarray, value : int = 30) -> np.ndarray:
+#     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+#     h, s, v = cv2.split(hsv)
+#     lim = 255 - value
+#     v[v > lim] = 255
+#     v[v <= lim] += value
+#     final_hsv = cv2.merge((h, s, v))
+#     img = cv2.cvtColor(final_hsv, cv2.COLOR_HSV2BGR)
+#     return img
 
-def increase_brightness(img : np.ndarray, value : int = 30) -> np.ndarray:
-    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-    h, s, v = cv2.split(hsv)
-    lim = 255 - value
-    v[v > lim] = 255
-    v[v <= lim] += value
-    final_hsv = cv2.merge((h, s, v))
-    img = cv2.cvtColor(final_hsv, cv2.COLOR_HSV2BGR)
-    return img
-
-def descew_image(img : np.ndarray) -> Tuple[np.ndarray, Optional[np.float64]]:
+def descew_image(img : np.ndarray, data_dir : str) -> Tuple[np.ndarray, Optional[np.float64]]:
     angle = determine_skew(img)
-    # Descewing
+    # Rotation if angle not 0
     if angle:
         img = (transform.rotate(img, angle, mode = "symmetric") * 255).astype(np.uint8)
     # Image.fromarray(img).save(f"{data_dir}/rotated.png")
@@ -94,10 +112,7 @@ def descew_image(img : np.ndarray) -> Tuple[np.ndarray, Optional[np.float64]]:
 
 def my_ocr(txt_out_filename : str, thresh : np.ndarray) -> str:
     # Apply OCR 
-    text = pytesseract.image_to_string(
-            thresh, 
-            config='--psm 11 --oem 3 -c tessedit_char_whitelist=./:0123456789'
-            )
+    text = pytesseract.image_to_string(thresh, config=OCR_CONFIG)
     if len(text) > 0:
         # A text file is created and flushed
         with open(txt_out_filename, "a") as out_file:
@@ -107,14 +122,22 @@ def my_ocr(txt_out_filename : str, thresh : np.ndarray) -> str:
     else:
         return ''
 
-def check_text(text : str, diff_years : int = 5) -> Dict[str, date]:
-    res = re.findall(r"[0-9]{2}\/[0-9]{2}\/[0-9]{2}?|[0-9]{2}\.[0-9]{2}\.[0-9]{2}?", text)
-    res_parsed = {} # type : Dict[str, date]
+def check_text(text : str, diff_years : int = 5, min_text_len : int = 6) -> OrderedDict[str, date]:
+    res_parsed : OrderedDict[str, date] = OrderedDict()
+    if len(text) < min_text_len:
+        return res_parsed
+    dates_strs : List[str] = []
+    for compiled_pattern in COMPILED_DATE_PATTERNS:
+        res = compiled_pattern.findall(text)
+        if len(res) > 0:
+            dates_strs += res
+            break
     for date_str in res:
         try:
             parsed_date = parse(date_str, dayfirst = True)
             if abs(date.today().year - parsed_date.year) <= diff_years:
                 res_parsed[date_str] = parsed_date
+                print(parsed_date)
         except ValueError:
             pass
     return res_parsed
@@ -124,19 +147,23 @@ def flush_file(txt_out_filename):
         out_file.write('')
 
 def init_settings(shuffling : bool = False, img : np.ndarray = np.ndarray(0)) -> List[Setting]:
-    # Initialize settings
-    settings = []
-    for preblur_level in (False, True):
-        for dilate_iter_level in (10, 9, 8, 6):
-            for bright_level in (0, 60, 100, 140):
-                cur_setting = Setting(preblur = preblur_level, 
-                                        dilate_iter = dilate_iter_level, 
-                                        incr_bright = bright_level)
-                if img.shape[0] > 0:
-                    cur_setting.thresh = img
-                settings.append(cur_setting)
-    if shuffling:
-        return sorted(random.sample(settings, len(settings)), key = lambda v : v._preblur)
+    # Initialize settings levels
+    settings : List[Setting] = []
+    for preblur_level in [False]:
+        for brightness_level in [0, -40, 10]:
+            for contrast_level in [0.3, 1.5]:
+                for dilate_iter_level in [0, 2, 4]:
+                    for angle_level in [0, -40, -20, 20, 40]:
+                        cur_setting = Setting(preblur = preblur_level, 
+                                                dilate_iter = dilate_iter_level, 
+                                                alpha = contrast_level,
+                                                beta = brightness_level,
+                                                angle = angle_level)
+                        if img.shape[0] > 0:
+                            cur_setting.thresh = img
+                        settings.append(cur_setting)
+    # if shuffling:
+    #     settings = sorted(random.sample(settings, len(settings)), key = lambda v : v._preblur)
         #return random.sample(settings, len(settings))
     return settings
 
@@ -147,7 +174,9 @@ def recognize_full_image(
         max_number_dates : int = 0
     ) -> None:
     recognition_log_file = f"{data_dir}/recognized_log.txt"
+    flush_file(recognition_log_file)
     for cur_setting in tqdm(settings):
+        # Image.fromarray(cur_setting.thresh).save(f"{data_dir}/full_thresh.png")
         cur_setting.recognized_text = \
             my_ocr(recognition_log_file, cur_setting.thresh)
         if len(cur_setting.recognized_text) > 0:
@@ -161,71 +190,88 @@ def recognize_tiles_image(
         recognised_dates : OrderedDict[str, date],
         data_dir : str,
         max_number_dates : int = 0,
-        reductions_factors : Tuple[int, int] = (3, 4)
+        reductions_factors : List[int] = [4],
+        settings_num : Optional[int] = None
     ) -> None:
     settings = sorted(
         settings, 
         key = lambda v : v.recognized_text_len, 
         reverse = True
     )
+    if settings_num:
+        settings = settings[ : settings_num]
     recognition_log_file = f"{data_dir}/recognized_tiles_log.txt"
     flush_file(recognition_log_file)
     for patch_reduction_factor in reductions_factors:
         for cur_setting in tqdm(settings):
-        # # Image.fromarray(thresh).save(f"{data_dir}/thresh.png")
             patch_size = sorted(
                             [int(cur_setting.thresh.shape[0]/patch_reduction_factor), 
                                 int(cur_setting.thresh.shape[1]/patch_reduction_factor)]
                             )
-            for seed in range(2):
-                for patch in extract_patches_2d(
-                        cur_setting.thresh, 
-                        patch_size = patch_size, 
-                        max_patches = patch_reduction_factor ** 2, 
-                        random_state = np.random.RandomState(seed)
-                    ):
-                    # Image.fromarray(patch).save(f"{data_dir}/patch_thresh.png")
-                    text = my_ocr(recognition_log_file, patch)
-                    if text:
-                        recognised_dates.update(check_text(text))
-                        if max_number_dates > 0 \
-                            and len(recognised_dates) >= max_number_dates:
-                            return
+            for patch in extract_patches_2d(
+                    cur_setting.thresh, 
+                    patch_size = patch_size, 
+                    max_patches = patch_reduction_factor ** 3
+                ):
+                # Image.fromarray(patch).save(f"{data_dir}/tile_thresh.png")
+                text = my_ocr(recognition_log_file, patch)
+                if text:
+                    recognised_dates.update(check_text(text))
+                    if max_number_dates > 0 \
+                        and len(recognised_dates) >= max_number_dates:
+                        return
 
 def filter_recognised_dates(recognised_dates : OrderedDict[str, date]) -> OrderedDict[str, date]:
-    # if len(recognised_dates) == 2:
-    #     return OrderedDict(sorted(recognised_dates.items(), key = lambda v : v[1]))
-    # else:
     # Do filter dates
-    recognised_dates_list = sorted(recognised_dates.items(), key = lambda v : v[1])
-    dates_before_today = []
-    dates_after_today = []
-    for date_s, date_v in recognised_dates_list:
+    dates_before_today : List[Tuple[str, date]] = []
+    dates_after_today : List[Tuple[str, date]] = []
+    for date_s, date_v in recognised_dates.items():
         if date_v < datetime.today():
-            dates_before_today.append([date_s, date_v])
+            dates_before_today.append((date_s, date_v))
         else:
-            dates_after_today.append([date_s, date_v])
+            dates_after_today.append((date_s, date_v))
     prod_dates = sorted(dates_before_today, key = lambda v : v[1])
     exp_dates = sorted(dates_after_today, key = lambda v : v[1])
     if len(prod_dates) > 0 and len(exp_dates) > 0:
         return OrderedDict([prod_dates[-1], exp_dates[0]])
-    elif len(prod_dates) > 1:
+    elif len(prod_dates) >= 2:
         # Exp date before today
         return OrderedDict([prod_dates[-2], prod_dates[-1]])
+    elif len(exp_dates) >= 1:
+        # Only expiry date has
+        return OrderedDict([exp_dates[0]])
+    return recognised_dates
 
-def dates_recognition(img_path: str, data_dir : str, max_number_dates : int = 3) -> OrderedDict[str, date]:
-    recognised_dates = OrderedDict() # type: OrderedDict
+def get_img_from_path(img_path: str) -> Optional[np.ndarray]:
     if not path.exists(img_path):
-        return recognised_dates
+        return None
     # Read image
-    img = cv2.imread(img_path)
+    return cv2.imread(img_path)
+
+def img_initial_preparation(img : np.ndarray, data_dir : str):
     # Reduce resolution
     # while min(img.shape) > 800:
     #     img = cv2.pyrDown(img)
+    # image to gray
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     # Rotate
-    img, angle = descew_image(img)
-    # Init several images views. Everyone will be used for OCR
-    settings = init_settings(shuffling = True, img = img)
+    img, _ = descew_image(img, data_dir)
+    return img
+
+def dates_recognition(
+        img: np.ndarray, 
+        data_dir : str, 
+        max_number_dates : int = 2
+    ) -> OrderedDict[str, date]:
+    recognised_dates = OrderedDict() # type: OrderedDict
+
+    # image to gray, resizing, rotation
+    img = img_initial_preparation(img, data_dir)
+    
+    # Init several images views with differecnt settings 
+    # Everyone will be used for OCR
+    settings = init_settings(shuffling = False, img = img)
+    
     # Try to recognize from full image
     recognize_full_image(
         settings = settings, 
@@ -236,6 +282,7 @@ def dates_recognition(img_path: str, data_dir : str, max_number_dates : int = 3)
     print("\nrecognised_dates from full image:")
     print(recognised_dates)
 
+    # Check after full image recognition
     if len(recognised_dates) >= max_number_dates:
         recognised_dates = \
             filter_recognised_dates(recognised_dates = recognised_dates)
@@ -250,13 +297,14 @@ def dates_recognition(img_path: str, data_dir : str, max_number_dates : int = 3)
             print(recognised_dates)
             return filtered_recognised_dates
 
-    print("\nwill try to recognize from tiles image...")
     # Try to recognize from tiles image
+    print("\nwill try to recognize from tiles image...")
     recognize_tiles_image(
         settings = settings, 
         recognised_dates = recognised_dates, 
         data_dir = data_dir,
-        max_number_dates = max_number_dates
+        max_number_dates = max_number_dates,
+        settings_num = int(len(settings) / 4)
     )
     print("\nrecognised_dates:")
     print(recognised_dates)
@@ -267,8 +315,9 @@ def dates_recognition(img_path: str, data_dir : str, max_number_dates : int = 3)
     return recognised_dates
 
 def main():
-    data_dir = "data/example/test_dates_recogn_1/"
-    recognised_dates = dates_recognition(f"{data_dir}/IMG_3529.jpg", data_dir)
+    data_dir = "data/bot_test/"
+    img = get_img_from_path(f"{data_dir}/recieved_image.png")
+    recognised_dates = dates_recognition(img, data_dir)
 
 if __name__ == "__main__":
     st = time()
