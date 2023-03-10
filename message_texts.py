@@ -25,3 +25,10 @@ Bot commands:
 /changelabelprod <id> - Change label for product with <id>. If <id> is empty then do it for the last product;
 /help - Show bot commands.
 """
+
+PRODUCT_INFO="""
+Product id: {product_id}
+PROD: {date_prod}
+EXP: {date_exp}
+Minio object_name: {label_path}
+"""

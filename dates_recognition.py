@@ -1,4 +1,4 @@
-from typing import Tuple, List, Dict, Optional
+from typing import Tuple, List, Optional
 import logging
 import re
 # import random
@@ -13,7 +13,6 @@ from deskew import determine_skew
 from sklearn.feature_extraction.image import extract_patches_2d
 from dateutil.parser import parse
 from datetime import date
-from datetime import datetime
 from collections import OrderedDict
 from time import time
 from os import path
@@ -144,7 +143,7 @@ def check_text(text : str, diff_years : int = 5, min_text_len : int = 6) -> Orde
             break
     for date_str in res:
         try:
-            parsed_date = parse(date_str, dayfirst = True)
+            parsed_date = parse(date_str, dayfirst = True).date()
             if abs(date.today().year - parsed_date.year) <= diff_years:
                 res_parsed[date_str] = parsed_date
                 logging.info(parsed_date)
@@ -233,15 +232,7 @@ def recognize_tiles_image(
 
 def filter_recognised_dates(recognised_dates : OrderedDict[str, date]) -> OrderedDict[str, date]:
     # Do filter dates
-    dates_before_today : List[Tuple[str, date]] = []
-    dates_after_today : List[Tuple[str, date]] = []
-    for date_s, date_v in recognised_dates.items():
-        if date_v < datetime.today():
-            dates_before_today.append((date_s, date_v))
-        else:
-            dates_after_today.append((date_s, date_v))
-    prod_dates = sorted(dates_before_today, key = lambda v : v[1])
-    exp_dates = sorted(dates_after_today, key = lambda v : v[1])
+    prod_dates, exp_dates = get_prod_exp_dates(recognised_dates)
     if len(prod_dates) > 0 and len(exp_dates) > 0:
         return OrderedDict([prod_dates[-1], exp_dates[0]])
     elif len(prod_dates) >= 2:
@@ -251,6 +242,20 @@ def filter_recognised_dates(recognised_dates : OrderedDict[str, date]) -> Ordere
         # Only expiry date has
         return OrderedDict([exp_dates[0]])
     return recognised_dates
+
+def get_prod_exp_dates(recognised_dates : OrderedDict[str, date]) \
+    -> Tuple[List[Tuple[str, date]], List[Tuple[str, date]]]:
+    dates_before_today : List[Tuple[str, date]] = []
+    dates_after_today : List[Tuple[str, date]] = []
+    for date_s, date_v in recognised_dates.items():
+        if date_v < date.today():
+            dates_before_today.append((date_s, date_v))
+        else:
+            dates_after_today.append((date_s, date_v))
+    prod_dates = sorted(dates_before_today, key = lambda v : v[1])
+    exp_dates = sorted(dates_after_today, key = lambda v : v[1])
+    return prod_dates, exp_dates
+
 
 def get_img_from_path(img_path: str) -> Optional[np.ndarray]:
     if not path.exists(img_path):

@@ -1,8 +1,9 @@
 import minio
 import os
-import datetime
+from datetime import timedelta
 import json
 import urllib3
+from io import BytesIO
 urllib3.disable_warnings()
 from minio.commonconfig import Tags
 
@@ -23,7 +24,7 @@ class MyMinioClient():
                 print(f"Bucket '{self._bucket_name}' already exists")
         except minio.S3Error as exc:
             print("error occurred.", exc)
-    def put_new_photo(self, file_path : str, user : str) -> minio.api.ObjectWriteResult:
+    def fput_new_photo(self, file_path : str, user : str) -> minio.api.ObjectWriteResult:
         try:
             object_name = f"{os.path.basename(file_path)}"
             tags = Tags(for_object=True)
@@ -35,11 +36,44 @@ class MyMinioClient():
                 content_type = "application/photos",
                 tags = tags
             )
-            print(f"created {result.object_name} object; \
-                etag: {result.etag}, version-id: {result.version_id}")
+            print(
+                f"""\
+                created {result.object_name} object;\
+                etag: {result.etag}, version-id: {result.version_id}\
+                """
+            )
             return result
         except minio.S3Error as exc:
             print("error occurred.", exc)
+    
+    def put_new_photo(
+            self, 
+            image : BytesIO, 
+            length : int,
+            user : str, 
+            object_name : str
+        ) -> minio.api.ObjectWriteResult:
+        try:
+            tags = Tags(for_object=True)
+            tags["User"] = user
+            result = self._client.put_object(
+                bucket_name = self._bucket_name,
+                object_name = object_name,
+                data = image,
+                length = length,
+                content_type = "application/photos",
+                tags = tags
+            )
+            print(
+                f"""
+                created {result.object_name} object;
+                etag: {result.etag}, version-id: {result.version_id}
+                """
+            )
+            return result
+        except minio.S3Error as exc:
+            print("error occurred.", exc)
+    
     def get_object_url(self, object_name : str) -> str:
         try:
             # Get presigned URL string to download 'my-object' in
@@ -48,7 +82,7 @@ class MyMinioClient():
                 "GET",
                 self._bucket_name,
                 object_name,
-                expires = datetime.timedelta(hours=2),
+                expires = timedelta(hours=2),
             )
             print(url)
             return url
