@@ -93,6 +93,18 @@ class MyMinioClient():
             return minio_res
         except (AttributeError, TypeError, ValueError):
             raise ValueError("Something goes wrong while uploading byterrary photo to minio!")
+    def get_object(self, object_name : str):
+        try:
+            # Get presigned URL string to download 'my-object' in
+            # 'my-bucket' with two hours expiry.
+            response = self._client.get_object(
+                self._bucket_name,
+                object_name,
+            )
+            return response
+        except minio.S3Error as exc:
+            print("error occurred.", exc)
+            return
     def get_object_url(self, object_name : str) -> str:
         try:
             # Get presigned URL string to download 'my-object' in

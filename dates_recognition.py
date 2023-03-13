@@ -232,7 +232,7 @@ def recognize_tiles_image(
 
 def filter_recognised_dates(recognised_dates : OrderedDict[str, date]) -> OrderedDict[str, date]:
     # Do filter dates
-    prod_dates, exp_dates = get_prod_exp_dates(recognised_dates)
+    prod_dates, exp_dates = get_possible_prod_exp_dates(recognised_dates)
     if len(prod_dates) > 0 and len(exp_dates) > 0:
         return OrderedDict([prod_dates[-1], exp_dates[0]])
     elif len(prod_dates) >= 2:
@@ -243,7 +243,7 @@ def filter_recognised_dates(recognised_dates : OrderedDict[str, date]) -> Ordere
         return OrderedDict([exp_dates[0]])
     return recognised_dates
 
-def get_prod_exp_dates(recognised_dates : OrderedDict[str, date]) \
+def get_possible_prod_exp_dates(recognised_dates : OrderedDict[str, date]) \
     -> Tuple[List[Tuple[str, date]], List[Tuple[str, date]]]:
     dates_before_today : List[Tuple[str, date]] = []
     dates_after_today : List[Tuple[str, date]] = []
@@ -256,6 +256,22 @@ def get_prod_exp_dates(recognised_dates : OrderedDict[str, date]) \
     exp_dates = sorted(dates_after_today, key = lambda v : v[1])
     return prod_dates, exp_dates
 
+def get_prod_exp_dates(recognised_dates : OrderedDict[str, date]) \
+    -> Tuple[Optional[Tuple[str, date]], Optional[Tuple[str, date]]]:
+    prod_dates, exp_dates = get_possible_prod_exp_dates(recognised_dates)
+    # Do filter dates
+    if len(prod_dates) > 0 and len(exp_dates) > 0:
+        return prod_dates[-1], exp_dates[0]
+    elif len(prod_dates) >= 2:
+        # Exp date before today
+        return prod_dates[-2], prod_dates[-1]
+    elif len(prod_dates) >= 1:
+        # Only production date has
+        return prod_dates[-1], None
+    elif len(exp_dates) >= 1:
+        # Only expiry date has
+        return None, exp_dates[0]
+    return None, None
 
 def get_img_from_path(img_path: str) -> Optional[np.ndarray]:
     if not path.exists(img_path):

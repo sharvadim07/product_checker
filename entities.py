@@ -178,9 +178,21 @@ async def update_product_db(
         await db.execute(
             f"""
             UPDATE product
-               SET label_path = IF({label_path} = None, label_path, {label_path}),
-                   date_prod = IF({date_prod} = None, label_path, {date_prod}),
-                   date_exp = IF({date_exp} = None, label_path, {date_exp}),
+               SET label_path = IIF("{label_path}" = "None", label_path, "{label_path}"),
+                   date_prod = IIF("{date_prod}" = "None", label_path, "{date_prod}"),
+                   date_exp = IIF("{date_exp}" = "None", label_path, "{date_exp}")
+             WHERE product_id = "{product_id}";
+            """
+        )
+        await db.commit()
+
+async def remove_product_db(
+        product_id : int, 
+    ) -> None:
+    async with aiosqlite.connect(config.SQLITE_DB_FILE) as db:
+        await db.execute(
+            f"""
+            DELETE FROM product
              WHERE product_id = {product_id};
             """
         )
@@ -210,18 +222,26 @@ async def new_user_product(bot_user : BotUser) -> Product:
 async def update_product(
         cur_product : Product,
         label_path : Optional[str] = None,
-        prod_dates : Optional[List[Tuple[str, date]]] = None,
-        exp_dates : Optional[List[Tuple[str, date]]] = None,
+        prod_date : Optional[Tuple[str, date]] = None,
+        exp_date : Optional[Tuple[str, date]] = None,
     ) -> None:
     if label_path:
         cur_product.label_path = label_path
-    if prod_dates and len(prod_dates) > 0:
-        cur_product.date_prod = prod_dates[-1][1].strftime("%d/%m/%Y")
-    if exp_dates and len(exp_dates) > 0:
-        cur_product.date_exp = exp_dates[0][1].strftime("%d/%m/%Y")
+    if prod_date:
+        cur_product.date_prod = prod_date[1].strftime("%d/%m/%Y")
+    if exp_date:
+        cur_product.date_exp = exp_date[1].strftime("%d/%m/%Y")
     await update_product_db(
         cur_product.product_id,
         cur_product.label_path,
         cur_product.date_prod,
         cur_product.date_exp
     )
+
+async def remove_product(
+        cur_product : Product,
+        bot_user : BotUser
+    ) -> None:
+    if bot_user.products:
+        bot_user.products.pop(cur_product.product_id)
+    await remove_product_db(cur_product.product_id)
