@@ -45,7 +45,6 @@ class MyMinioClient():
             return result
         except minio.S3Error as exc:
             print("error occurred.", exc)
-    
     def put_new_photo(
             self, 
             image : BytesIO, 
@@ -72,8 +71,28 @@ class MyMinioClient():
             )
             return result
         except minio.S3Error as exc:
-            print("error occurred.", exc)
-    
+            raise ValueError("minio.S3Error occurred.", exc)
+    def put_new_bytearray_photo(
+        self,
+        bytearray_photo : bytearray, 
+        user : str,
+        object_name : str
+    ) -> minio.api.ObjectWriteResult:
+        # Upload photo to Minio
+        try:
+            # Convert the bytearray to a bytes object
+            data_bytes = bytes(bytearray_photo)
+            # Create a BytesIO object to read the bytes
+            data_stream = BytesIO(data_bytes)
+            minio_res = self.put_new_photo(
+                data_stream, 
+                len(data_bytes),
+                user,
+                object_name
+            )
+            return minio_res
+        except (AttributeError, TypeError, ValueError):
+            raise ValueError("Something goes wrong while uploading byterrary photo to minio!")
     def get_object_url(self, object_name : str) -> str:
         try:
             # Get presigned URL string to download 'my-object' in

@@ -10,5 +10,5 @@ CREATE TABLE product(
     date_exp DATE,
     label_path VARCHAR(200),
     telegram_user_id INT NOT NULL,
-    FOREIGN KEY (telegram_user_id) REFERENCES user (telegram_user_id)
+    FOREIGN KEY (telegram_user_id) REFERENCES user (telegram_user_id) ON DELETE CASCADE
 );
