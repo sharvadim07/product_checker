@@ -168,6 +168,30 @@ async def new_user_product_db(telegram_user_id : int) -> None:
         )
         await db.commit()
 
+async def get_product_db(product_id : int) -> Optional[Product]:
+    product = None
+    async with aiosqlite.connect(config.SQLITE_DB_FILE) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute(
+            f"""
+            SELECT *
+              FROM product
+             WHERE product_id = {product_id};
+            """
+        ) as cursor:
+            async for row in cursor:
+                if row["product_id"] != None:
+                    if not product:
+                        product =  Product(
+                            row["product_id"],
+                            row["created_at"],
+                            row["date_prod"],
+                            row["date_exp"],
+                            row["label_path"]
+                        )
+    return product
+                        
+
 async def update_product_db(
         product_id : int, 
         label_path : Optional[str] = None, 
@@ -179,8 +203,8 @@ async def update_product_db(
             f"""
             UPDATE product
                SET label_path = IIF("{label_path}" = "None", label_path, "{label_path}"),
-                   date_prod = IIF("{date_prod}" = "None", label_path, "{date_prod}"),
-                   date_exp = IIF("{date_exp}" = "None", label_path, "{date_exp}")
+                   date_prod = IIF("{date_prod}" = "None", date_prod, "{date_prod}"),
+                   date_exp = IIF("{date_exp}" = "None", date_exp, "{date_exp}")
              WHERE product_id = "{product_id}";
             """
         )
@@ -232,10 +256,10 @@ async def update_product(
     if exp_date:
         cur_product.date_exp = exp_date[1].strftime("%d/%m/%Y")
     await update_product_db(
-        cur_product.product_id,
-        cur_product.label_path,
-        cur_product.date_prod,
-        cur_product.date_exp
+        product_id = cur_product.product_id,
+        label_path = cur_product.label_path,
+        date_prod = cur_product.date_prod,
+        date_exp = cur_product.date_exp
     )
 
 async def remove_product(

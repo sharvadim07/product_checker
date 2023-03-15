@@ -32,3 +32,9 @@ PROD: {date_prod}
 EXP: {date_exp}
 Minio object_name: {label_path}
 """
+
+MYPROD_BUTTON_TEXT="My products"
+HELP_BUTTON_TEXT="Help"
+
+ENTER_PRODEXP_DATE="Enter new production/expiration date(s):"
+SEND_NEW_LABEL_PHOTO="Send new label photo for product..."

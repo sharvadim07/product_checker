@@ -85,7 +85,7 @@ class MyMinioClient():
             # Create a BytesIO object to read the bytes
             data_stream = BytesIO(data_bytes)
             minio_res = self.put_new_photo(
-                data_stream, 
+                data_stream,
                 len(data_bytes),
                 user,
                 object_name
