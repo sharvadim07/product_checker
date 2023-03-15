@@ -162,7 +162,7 @@ def init_settings(shuffling : bool = False, img : np.ndarray = np.ndarray(0)) ->
         for brightness_level in [0, -40, 10]:
             for contrast_level in [0.3, 1.5]:
                 for dilate_iter_level in [0, 2, 4]:
-                    for angle_level in [0, -40, -20, 20, 40]:
+                    for angle_level in [0]:#[0, -40, -20, 20, 40]:
                         cur_setting = Setting(preblur = preblur_level, 
                                                 dilate_iter = dilate_iter_level, 
                                                 alpha = contrast_level,
@@ -335,7 +335,7 @@ def dates_recognition(
         recognised_dates = recognised_dates, 
         data_dir = data_dir,
         max_number_dates = max_number_dates,
-        settings_num = int(len(settings) / 4)
+        settings_num = 3
     )
     logging.info("recognised_dates:")
     logging.info(recognised_dates)
