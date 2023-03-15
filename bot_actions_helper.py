@@ -5,6 +5,7 @@ from telegram.ext import (
 from telegram import (
     Update,
     CallbackQuery,
+    error
 )
 import message_texts
 from dates_recognition import check_text
@@ -73,11 +74,14 @@ async def update_product_dates(prod_to_edit : List[Tuple[int, CallbackQuery]], t
             )
             if not query.message:
                 raise ValueError("query.message is None")
-            await query.message.edit_caption(message_texts.PRODUCT_INFO.format(
-                    product_id = cur_product.product_id,
-                    date_prod = cur_product.date_prod,
-                    date_exp = cur_product.date_exp,
-                    label_path = cur_product.label_path
-                ),
-                reply_markup = bot_menu_helper.edit_product_inline_menu(product_id)
-            )
+            try:
+                await query.message.edit_caption(message_texts.PRODUCT_INFO.format(
+                        product_id = cur_product.product_id,
+                        date_prod = cur_product.date_prod,
+                        date_exp = cur_product.date_exp,
+                        label_path = cur_product.label_path
+                    ),
+                    reply_markup = bot_menu_helper.edit_product_inline_menu(product_id)
+                )
+            except error.BadRequest as e:
+                raise ValueError(e)

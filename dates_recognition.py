@@ -1,7 +1,7 @@
 from typing import Tuple, List, Optional
 import logging
 import re
-# import random
+import random
 import numpy as np
 from tqdm import tqdm
 # from PIL import Image
@@ -23,9 +23,9 @@ logging.basicConfig(
 )
 
 DATE_PATTERNS = [
-    r'\d{4}[-/.]\d{2}[-/.]\d{2}',  # matches yyyy/mm/dd format
-    r'\d{2}[-/.]\d{2}[-/.]\d{4}',  # matches dd/mm/yyyy format
-    r'\d{2}[-/.]\d{2}[-/.]\d{2}',  # matches dd/mm/yy format
+    r'\d{4}[-/.\s]\d{2}[-/.\s]\d{2}',  # matches yyyy/mm/dd format
+    r'\d{2}[-/.\s]\d{2}[-/.\s]\d{4}',  # matches dd/mm/yyyy format
+    r'\d{2}[-/.\s]\d{2}[-/.\s]\d{2}',  # matches dd/mm/yy format
 ]
 COMPILED_DATE_PATTERNS = [re.compile(patt) for patt in DATE_PATTERNS]
 OCR_CONFIG = "--psm 11 --oem 3 -c tessedit_char_whitelist=-./0123456789"
@@ -73,7 +73,7 @@ class Setting():
             img = cv2.medianBlur(img, self._blur_level)
         self._thresh = img
         # Applying thresholding 
-        ret, self._thresh = cv2.threshold(img, 120, 255, cv2.THRESH_OTSU | cv2.THRESH_BINARY_INV)
+        ret, self._thresh = cv2.threshold(img, 0, 255, cv2.THRESH_OTSU | cv2.THRESH_BINARY_INV)
         # # Padding
         # #self._thresh = cv2.copyMakeBorder(self._thresh, 20, 20, 20, 20, cv2.BORDER_CONSTANT, value=(0, 0, 0))
         if self._dilate_iter > 0:
@@ -123,11 +123,12 @@ def my_ocr(txt_out_filename : str, thresh : np.ndarray) -> str:
     # Apply OCR 
     text = pytesseract.image_to_string(thresh, config=OCR_CONFIG)
     if len(text) > 0:
+        # DEBUG: 
         # A text file is created and flushed
-        with open(txt_out_filename, "a") as out_file:
-            # Appending the text into file
-            out_file.write(text)
-            return text
+        # with open(txt_out_filename, "a") as out_file:
+        #     # Appending the text into file
+        #     out_file.write(text)
+        return text
     else:
         return ''
 
@@ -173,8 +174,8 @@ def init_settings(shuffling : bool = False, img : np.ndarray = np.ndarray(0)) ->
                         settings.append(cur_setting)
     # if shuffling:
     #     settings = sorted(random.sample(settings, len(settings)), key = lambda v : v._preblur)
-        #return random.sample(settings, len(settings))
-    return settings
+    return random.sample(settings, len(settings))
+    #return settings
 
 def recognize_full_image(
         settings : List[Setting], 
@@ -286,7 +287,8 @@ def img_initial_preparation(img : np.ndarray, data_dir : str):
     # image to gray
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     # Rotate
-    img, _ = descew_image(img, data_dir)
+    # TODO: Check with it and without it
+    # img, _ = descew_image(img, data_dir)
     return img
 
 def dates_recognition(

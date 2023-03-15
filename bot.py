@@ -87,7 +87,7 @@ async def text_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await bot_actions_helper.update_product_dates(prod_to_edit, update.message.text)
         except ValueError as e:
             logging.info(e)
-            await update.message.reply_text("Bad dates. Please retry to edit product...")
+            await update.message.reply_text("Not changed. Please retry to edit product...")
         context.chat_data["edit_product_dates"].pop()
 
 async def product_inline_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):

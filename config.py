@@ -2,7 +2,8 @@ from json import load
 from os import path
 from collections import namedtuple
 
-CONFIG = namedtuple("CONFIG", [
+CONFIG = namedtuple(
+    "CONFIG", [
         "TELEGRAM_BOT_TOKEN",
         "DATA_BOT_TEST_DIR",
         "SQLITE_DB_FILE",

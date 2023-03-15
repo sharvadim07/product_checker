@@ -59,14 +59,16 @@ async def get_bot_users_and_products_db() -> OrderedDict[int, BotUser]:
                         )})
                     )
                 else:
-                    bot_users[row["telegram_user_id"]].products[row["product_id"]] = \
-                        Product(
-                            row["product_id"],
-                            row["created_at"],
-                            row["date_prod"],
-                            row["date_exp"],
-                            row["label_path"]
-                        )
+                    bot_user = bot_users.get(row["telegram_user_id"])
+                    if bot_user and bot_user.products:
+                        bot_user.products[row["product_id"]] = \
+                            Product(
+                                row["product_id"],
+                                row["created_at"],
+                                row["date_prod"],
+                                row["date_exp"],
+                                row["label_path"]
+                            )
     return bot_users
 
 async def get_all_bot_users() -> OrderedDict[int, BotUser]:
