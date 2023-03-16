@@ -57,7 +57,7 @@ async def help(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def photo_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if context.chat_data and "edit_label" in context.chat_data:
+    if context.chat_data and message_texts.PREFIX_EDIT_LABEL in context.chat_data:
         try:
             await bot_photo_helper.edit_photo_label(update, context)
         except ValueError as e:
@@ -83,8 +83,11 @@ async def text_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await bot_actions_helper.show_user_products(update, context)
     elif update.message.text == message_texts.HELP_BUTTON_TEXT:
         await help(update, context)
-    elif context.chat_data and "edit_product_dates" in context.chat_data:
-        prod_to_edit = context.chat_data["edit_product_dates"]
+    elif (
+        context.chat_data
+        and message_texts.PREFIX_EDIT_PRODUCT_DATES in context.chat_data
+    ):
+        prod_to_edit = context.chat_data[message_texts.PREFIX_EDIT_PRODUCT_DATES]
         try:
             await bot_actions_helper.update_product_dates(
                 prod_to_edit, update.message.text
@@ -94,7 +97,7 @@ async def text_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text(
                 "Not changed. Please retry to edit product..."
             )
-        context.chat_data["edit_product_dates"].pop()
+        context.chat_data[message_texts.PREFIX_EDIT_PRODUCT_DATES].pop()
 
 
 async def product_inline_menu_callback(
@@ -111,34 +114,42 @@ async def product_inline_menu_callback(
     # Get product id from callback data
     product_id = int(float(str(query.data).split("__")[1]))
     # Handle the selected option
-    if str(query.data).startswith("edit_product_dates"):
+    if str(query.data).startswith(message_texts.PREFIX_EDIT_PRODUCT_DATES):
         await query.message.reply_text(message_texts.ENTER_PRODEXP_DATE)
         await query.edit_message_reply_markup(
             reply_markup=bot_menu_helper.edit_product_inline_menu(product_id)
         )
         if isinstance(context.chat_data, Dict):
-            if "edit_product_dates" not in context.chat_data:
-                context.chat_data["edit_product_dates"] = [(product_id, query)]
+            if message_texts.PREFIX_EDIT_PRODUCT_DATES not in context.chat_data:
+                context.chat_data[message_texts.PREFIX_EDIT_PRODUCT_DATES] = [
+                    (product_id, query)
+                ]
             else:
-                context.chat_data["edit_product_dates"].append((product_id, query))
-    elif str(query.data).startswith("edit_label"):
+                context.chat_data[message_texts.PREFIX_EDIT_PRODUCT_DATES].append(
+                    (product_id, query)
+                )
+    elif str(query.data).startswith(message_texts.PREFIX_EDIT_LABEL):
         await query.message.reply_text(message_texts.SEND_NEW_LABEL_PHOTO)
         await query.edit_message_reply_markup(
             reply_markup=bot_menu_helper.edit_product_inline_menu(product_id)
         )
         if isinstance(context.chat_data, Dict):
-            if "edit_label" not in context.chat_data:
-                context.chat_data["edit_label"] = [(product_id, query)]
+            if message_texts.PREFIX_EDIT_LABEL not in context.chat_data:
+                context.chat_data[message_texts.PREFIX_EDIT_LABEL] = [
+                    (product_id, query)
+                ]
             else:
-                context.chat_data["edit_label"].append((product_id, query))
-    elif str(query.data).startswith("edit"):
+                context.chat_data[message_texts.PREFIX_EDIT_LABEL].append(
+                    (product_id, query)
+                )
+    elif str(query.data).startswith(message_texts.PREFIX_EDIT):
         await query.edit_message_reply_markup(
             reply_markup=bot_menu_helper.edit_product_inline_sub_menu(product_id)
         )
-    elif str(query.data).startswith("remove"):
+    elif str(query.data).startswith(message_texts.PREFIX_REMOVE):
         await entities.remove_product_db(product_id)
         await query.message.delete()
-    elif str(query.data).startswith("cancel"):
+    elif str(query.data).startswith(message_texts.PREFIX_CANCEL):
         await query.edit_message_reply_markup(
             reply_markup=bot_menu_helper.edit_product_inline_menu(product_id)
         )

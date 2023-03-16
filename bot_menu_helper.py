@@ -16,8 +16,12 @@ def edit_product_inline_menu(product_id: int) -> InlineKeyboardMarkup:
     # Define the buttons of keyboard
     keyboard = [
         [
-            InlineKeyboardButton("Edit", callback_data=f"edit__{product_id}"),
-            InlineKeyboardButton("Remove", callback_data=f"remove__{product_id}"),
+            InlineKeyboardButton(
+                "Edit", callback_data=f"{message_texts.PREFIX_EDIT}__{product_id}"
+            ),
+            InlineKeyboardButton(
+                "Remove", callback_data=f"{message_texts.PREFIX_REMOVE}__{product_id}"
+            ),
         ]
     ]
     return InlineKeyboardMarkup(keyboard)
@@ -29,13 +33,18 @@ def edit_product_inline_sub_menu(product_id: int) -> InlineKeyboardMarkup:
         [
             InlineKeyboardButton(
                 "Edit PROD/EXP date(s)",
-                callback_data=f"edit_product_dates__{product_id}",
+                callback_data=f"{message_texts.PREFIX_EDIT_PRODUCT_DATES}__{product_id}",
             ),
             InlineKeyboardButton(
-                "Edit label photo", callback_data=f"edit_label__{product_id}"
+                "Edit label photo",
+                callback_data=f"{message_texts.PREFIX_EDIT_LABEL}__{product_id}",
             ),
         ],
-        [InlineKeyboardButton("Cancel", callback_data=f"cancel__{product_id}")],
+        [
+            InlineKeyboardButton(
+                "Cancel", callback_data=f"{message_texts.PREFIX_CANCEL}__{product_id}"
+            )
+        ],
     ]
     return InlineKeyboardMarkup(keyboard)
 

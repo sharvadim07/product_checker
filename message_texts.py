@@ -41,4 +41,10 @@ HELP_BUTTON_TEXT = "Help"
 ENTER_PRODEXP_DATE = "Enter new production/expiration date(s):"
 SEND_NEW_LABEL_PHOTO = "Send new label photo for product..."
 
-_NAME_MINIO_OBJ = "user_{telegram_user_id}_product_{product_id}_photo"
+PREFIX_EDIT_PRODUCT_DATES = "edit_product_dates"
+PREFIX_EDIT_LABEL = "edit_label"
+PREFIX_REMOVE = "remove"
+PREFIX_CANCEL = "cancel"
+PREFIX_EDIT = "edit"
+
+NAME_MINIO_OBJ = "user_{telegram_user_id}_product_{product_id}_photo"
