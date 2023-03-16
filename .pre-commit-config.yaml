@@ -6,3 +6,8 @@ repos:
         args:
         - --diff
         - --check
+-   repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.1.1
+    hooks:
+    -   id: mypy
+        args: [--no-strict-optional, --ignore-missing-imports]
