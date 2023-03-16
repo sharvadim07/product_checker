@@ -73,7 +73,7 @@ class Setting():
             img = cv2.medianBlur(img, self._blur_level)
         self._thresh = img
         # Applying thresholding 
-        ret, self._thresh = cv2.threshold(img, 0, 255, cv2.THRESH_OTSU | cv2.THRESH_BINARY_INV)
+        ret, self._thresh = cv2.threshold(img, 120, 255, cv2.THRESH_OTSU | cv2.THRESH_BINARY_INV)
         # # Padding
         # #self._thresh = cv2.copyMakeBorder(self._thresh, 20, 20, 20, 20, cv2.BORDER_CONSTANT, value=(0, 0, 0))
         if self._dilate_iter > 0:
@@ -186,6 +186,7 @@ def recognize_full_image(
     recognition_log_file = f"{data_dir}/recognized_log.txt"
     flush_file(recognition_log_file)
     for cur_setting in tqdm(settings):
+        # DEBUG
         # Image.fromarray(cur_setting.thresh).save(f"{data_dir}/full_thresh.png")
         cur_setting.recognized_text = \
             my_ocr(recognition_log_file, cur_setting.thresh)
@@ -200,7 +201,7 @@ def recognize_tiles_image(
         recognised_dates : OrderedDict[str, date],
         data_dir : str,
         max_number_dates : int = 0,
-        reductions_factors : List[int] = [4],
+        reductions_factors : List[int] = [3],
         settings_num : Optional[int] = None
     ) -> None:
     settings = sorted(
@@ -223,6 +224,7 @@ def recognize_tiles_image(
                     patch_size = patch_size, 
                     max_patches = patch_reduction_factor ** 3
                 ):
+                # DEBUG
                 # Image.fromarray(patch).save(f"{data_dir}/tile_thresh.png")
                 text = my_ocr(recognition_log_file, patch)
                 if text:
