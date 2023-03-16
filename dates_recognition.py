@@ -22,13 +22,20 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
 )
 
-DATE_PATTERNS = [
+_DATE_PATTERNS = [
     r"\d{4}[-/.\s]\d{2}[-/.\s]\d{2}",  # matches yyyy/mm/dd format
     r"\d{2}[-/.\s]\d{2}[-/.\s]\d{4}",  # matches dd/mm/yyyy format
     r"\d{2}[-/.\s]\d{2}[-/.\s]\d{2}",  # matches dd/mm/yy format
 ]
-COMPILED_DATE_PATTERNS = [re.compile(patt) for patt in DATE_PATTERNS]
-OCR_CONFIG = "--psm 11 --oem 3 -c tessedit_char_whitelist=-./0123456789"
+_COMPILED_DATE_PATTERNS = [re.compile(patt) for patt in _DATE_PATTERNS]
+_OCR_CONFIG = "--psm 11 --oem 3 -c tessedit_char_whitelist=-./0123456789"
+_PREBLUR_LEVELS = [False]
+_BRIGHTNESS_LEVELS = [0, -40, 10]
+_CONTRAST_LEVELS = [0.3, 1.5]
+_DILATE_ITER_LEVELS = [0, 2, 4]
+_ANGLE_LEVELS = [0]
+_TILES_SETTINGS_NUMBER = 3  # If set None then all settings will be used
+_TILES_REDUCTIONS_FACTORS = [3]
 
 
 class Setting:
@@ -139,7 +146,7 @@ def descew_image(
 
 def my_ocr(txt_out_filename: str, thresh: np.ndarray) -> str:
     # Apply OCR
-    text = pytesseract.image_to_string(thresh, config=OCR_CONFIG)
+    text = pytesseract.image_to_string(thresh, config=_OCR_CONFIG)
     if len(text) > 0:
         # DEBUG:
         # A text file is created and flushed
@@ -158,7 +165,7 @@ def check_text(
     if len(text) < min_text_len:
         return res_parsed
     dates_strs: List[str] = []
-    for compiled_pattern in COMPILED_DATE_PATTERNS:
+    for compiled_pattern in _COMPILED_DATE_PATTERNS:
         res = compiled_pattern.findall(text)
         if len(res) > 0:
             dates_strs += res
@@ -184,11 +191,11 @@ def init_settings(
 ) -> List[Setting]:
     # Initialize settings levels
     settings: List[Setting] = []
-    for preblur_level in [False]:
-        for brightness_level in [0, -40, 10]:
-            for contrast_level in [0.3, 1.5]:
-                for dilate_iter_level in [0, 2, 4]:
-                    for angle_level in [0]:  # [0, -40, -20, 20, 40]:
+    for preblur_level in _PREBLUR_LEVELS:
+        for brightness_level in _BRIGHTNESS_LEVELS:
+            for contrast_level in _CONTRAST_LEVELS:
+                for dilate_iter_level in _DILATE_ITER_LEVELS:
+                    for angle_level in _ANGLE_LEVELS:  # [0, -40, -20, 20, 40]:
                         cur_setting = Setting(
                             preblur=preblur_level,
                             dilate_iter=dilate_iter_level,
@@ -228,7 +235,7 @@ def recognize_tiles_image(
     recognised_dates: OrderedDict[str, date],
     data_dir: str,
     max_number_dates: int = 0,
-    reductions_factors: List[int] = [3],
+    reductions_factors: List[int] = _TILES_REDUCTIONS_FACTORS,
     settings_num: Optional[int] = None,
 ) -> None:
     settings = sorted(settings, key=lambda v: v.recognized_text_len, reverse=True)
@@ -374,7 +381,7 @@ def dates_recognition(
         recognised_dates=recognised_dates,
         data_dir=data_dir,
         max_number_dates=max_number_dates,
-        settings_num=3,
+        settings_num=_TILES_SETTINGS_NUMBER,
     )
     logging.info("recognised_dates:")
     logging.info(recognised_dates)

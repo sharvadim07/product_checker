@@ -29,7 +29,7 @@ async def photo_label_update(
     minio_res = context.bot_data["my_minio"].put_new_bytearray_photo(
         downloaded_photo,
         str(telegram_user_id),
-        message_texts._NAME_MINIO_OBJ.format(
+        message_texts.NAME_MINIO_OBJ.format(
             telegram_user_id=telegram_user_id, product_id=product_id
         ),
     )
