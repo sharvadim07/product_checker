@@ -8,7 +8,7 @@ Bot commands:
 <photo> - User sends picture of one of their products with dates of prdouction and expiration. 
 User can use the menu's buttons for communication with bot.
 Bot abilities:
-- Show all products list with their product info;
+- Show all products list with their information;
 - Change dates of production and expiration for product;
 - Change label for product;
 - Delete product;
@@ -21,7 +21,7 @@ Bot commands:
 <photo> - User sends picture of one of their products with dates of prdouction and expiration. 
 User can use the menu's buttons for communication with bot.
 Bot abilities:
-- Show all products list with their product info;
+- Show all products list with their information;
 - Change dates of production and expiration for product;
 - Change label for product;
 - Delete product;
