@@ -11,16 +11,20 @@ from telegram import (
 )
 import message_texts
 
+PREFIX_EDIT_PRODUCT_DATES = "edit_product_dates"
+PREFIX_EDIT_LABEL = "edit_label"
+PREFIX_REMOVE = "remove"
+PREFIX_CANCEL = "cancel"
+PREFIX_EDIT = "edit"
+
 
 def edit_product_inline_menu(product_id: int) -> InlineKeyboardMarkup:
     # Define the buttons of keyboard
     keyboard = [
         [
+            InlineKeyboardButton("Edit", callback_data=f"{PREFIX_EDIT}__{product_id}"),
             InlineKeyboardButton(
-                "Edit", callback_data=f"{message_texts.PREFIX_EDIT}__{product_id}"
-            ),
-            InlineKeyboardButton(
-                "Remove", callback_data=f"{message_texts.PREFIX_REMOVE}__{product_id}"
+                "Remove", callback_data=f"{PREFIX_REMOVE}__{product_id}"
             ),
         ]
     ]
@@ -33,16 +37,16 @@ def edit_product_inline_sub_menu(product_id: int) -> InlineKeyboardMarkup:
         [
             InlineKeyboardButton(
                 "Edit PROD/EXP date(s)",
-                callback_data=f"{message_texts.PREFIX_EDIT_PRODUCT_DATES}__{product_id}",
+                callback_data=f"{PREFIX_EDIT_PRODUCT_DATES}__{product_id}",
             ),
             InlineKeyboardButton(
                 "Edit label photo",
-                callback_data=f"{message_texts.PREFIX_EDIT_LABEL}__{product_id}",
+                callback_data=f"{PREFIX_EDIT_LABEL}__{product_id}",
             ),
         ],
         [
             InlineKeyboardButton(
-                "Cancel", callback_data=f"{message_texts.PREFIX_CANCEL}__{product_id}"
+                "Cancel", callback_data=f"{PREFIX_CANCEL}__{product_id}"
             )
         ],
     ]
@@ -64,7 +68,9 @@ def main_menu():
 async def init_main_menu(update: Update):
     if not update.message:
         raise ValueError("update.message is None")
-    await update.message.reply_text("Press menu button...", reply_markup=main_menu())
+    await update.message.reply_text(
+        message_texts.PRESS_MENU_BUTTON, reply_markup=main_menu()
+    )
 
 
 # Define the function to add the menu to chat
