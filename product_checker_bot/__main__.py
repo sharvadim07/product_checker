@@ -12,7 +12,8 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
 )
 
-from product_checker_bot import handlers, config, services
+from product_checker_bot import handlers, services
+from product_checker_bot.config import config
 
 
 def main():
