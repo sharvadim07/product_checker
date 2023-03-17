@@ -1,17 +1,37 @@
 from typing import Tuple
+from minio.api import ObjectWriteResult
+from io import BytesIO
+
 from telegram.ext import (
     ContextTypes,
 )
-from telegram import Update, Message, InputMediaPhoto
-import message_texts
+from telegram import (
+    Update,
+    Message,
+    InputMediaPhoto,
+)
+
+from product_checker_bot import message_texts
 from config import config
-from dates_recognition import dates_recognition
-from dates_recognition import bytearray_to_img
-from dates_recognition import get_prod_exp_dates
-import entities
-import bot_menu_helper
-from minio.api import ObjectWriteResult
-from io import BytesIO
+from product_checker_bot.services.dates_recognition import dates_recognition
+from product_checker_bot.services.dates_recognition import bytearray_to_img
+from product_checker_bot.services.dates_recognition import get_prod_exp_dates
+from product_checker_bot.handlers import bot_menus
+from product_checker_bot import db
+
+
+async def photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if context.chat_data and bot_menus.PREFIX_EDIT_LABEL in context.chat_data:
+        try:
+            await edit_photo_label(update, context)
+        except ValueError as e:
+            raise ValueError(e)
+    else:
+        try:
+            await photo_simple_upload(update, context)
+        except ValueError as e:
+            raise ValueError(e)
+        await bot_menus.add_main_menu(update, context)
 
 
 async def photo_label_update(
@@ -40,7 +60,7 @@ async def replace_user_product_photo(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE,
     downloaded_photo: bytearray,
-    cur_product: entities.Product,
+    cur_product: db.Product,
 ) -> Message:
     if not update.message:
         raise ValueError("update.message is None")
@@ -56,7 +76,7 @@ async def replace_user_product_photo(
         chat_id=update.effective_chat.id,
         photo=data_stream,
         disable_notification=True,
-        reply_markup=bot_menu_helper.edit_product_inline_menu(cur_product.product_id),
+        reply_markup=bot_menus.edit_product_inline_menu(cur_product.product_id),
         caption=message_texts.PRODUCT_INFO.format(
             product_id=cur_product.product_id,
             date_prod=cur_product.date_prod,
@@ -75,8 +95,8 @@ async def photo_simple_upload(update: Update, context: ContextTypes.DEFAULT_TYPE
     if not update.message:
         raise ValueError("update.message is None")
     # Get user and add new product
-    bot_user = await entities.get_add_bot_user(update.effective_user.id)
-    cur_product = await entities.new_user_product(bot_user)
+    bot_user = await db.get_add_bot_user(update.effective_user.id)
+    cur_product = await db.new_user_product(bot_user)
     minio_res, downloaded_photo = await photo_label_update(
         update=update,
         context=context,
@@ -84,9 +104,7 @@ async def photo_simple_upload(update: Update, context: ContextTypes.DEFAULT_TYPE
         product_id=cur_product.product_id,
     )
     # Update product in DB
-    await entities.update_product(
-        cur_product=cur_product, label_path=minio_res.object_name
-    )
+    await db.update_product(cur_product=cur_product, label_path=minio_res.object_name)
     # Replace user photo to mesage with product info
     product_message = await replace_user_product_photo(
         update=update,
@@ -100,7 +118,7 @@ async def photo_simple_upload(update: Update, context: ContextTypes.DEFAULT_TYPE
     )
     if prod_date or exp_date:
         # Update product in DB
-        await entities.update_product(
+        await db.update_product(
             cur_product=cur_product, prod_date=prod_date, exp_date=exp_date
         )
         # Update product caption
@@ -111,9 +129,7 @@ async def photo_simple_upload(update: Update, context: ContextTypes.DEFAULT_TYPE
                 date_exp=cur_product.date_exp,
                 label_path=cur_product.label_path,
             ),
-            reply_markup=bot_menu_helper.edit_product_inline_menu(
-                cur_product.product_id
-            ),
+            reply_markup=bot_menus.edit_product_inline_menu(cur_product.product_id),
         )
 
 
@@ -127,8 +143,8 @@ async def edit_photo_label(update: Update, context: ContextTypes.DEFAULT_TYPE):
     prod_to_edit = context.chat_data["edit_label"]
     for product_id, query in prod_to_edit:
         # Get user
-        bot_user = await entities.get_add_bot_user(update.effective_user.id)
-        cur_product = await entities.get_product_db(product_id)
+        bot_user = await db.get_add_bot_user(update.effective_user.id)
+        cur_product = await db.get_product_db(product_id)
         if not cur_product:
             raise ValueError("cur_product is None")
         minio_res, downloaded_photo = await photo_label_update(
@@ -138,7 +154,7 @@ async def edit_photo_label(update: Update, context: ContextTypes.DEFAULT_TYPE):
             product_id=cur_product.product_id,
         )
         # Update new product in DB
-        await entities.update_product(
+        await db.update_product(
             cur_product=cur_product, label_path=minio_res.object_name
         )
         if not query.message:
@@ -153,8 +169,6 @@ async def edit_photo_label(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 date_exp=cur_product.date_exp,
                 label_path=cur_product.label_path,
             ),
-            reply_markup=bot_menu_helper.edit_product_inline_menu(
-                cur_product.product_id
-            ),
+            reply_markup=bot_menus.edit_product_inline_menu(cur_product.product_id),
         )
     context.chat_data["edit_label"].pop()
