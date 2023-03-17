@@ -3,29 +3,29 @@ Hello {username}, it is product checker bot.
 I can generate and store information about your products (e.g. food from the supermarket) from their photos. 
 So I can send notifications about the end of expiry date.
 
-Bot commands:
-/start - Start bot;
-<photo> - User sends picture of one of their products with dates of prdouction and expiration. 
-User can use the menu's buttons for communication with bot.
-Bot abilities:
+</b>What's user can do:</b>
+1. Enter /start command to start bot with greetings message and description;
+2. Send <photo> of one of your products with dates of prdouction and expiration;
+3. After 1st action or 2nd action use the menu's buttons for communication with bot.
+
+</b>Bot abilities:</b>
 - Show all products list with their information;
 - Change dates of production and expiration for product;
 - Change label for product;
 - Delete product;
-- Send notification to user when some product about the end of expiry date.
 """
 
 HELP = """
-Bot commands:
-/start - Start bot;
-<photo> - User sends picture of one of their products with dates of prdouction and expiration. 
-User can use the menu's buttons for communication with bot.
-Bot abilities:
+</b>What's user can do:</b>
+1. Enter /start command to start bot with greetings message and description;
+2. Send <photo> of one of your products with dates of prdouction and expiration;
+3. After 1st action or 2nd action use the menu's buttons for communication with bot.
+
+</b>Bot abilities:</b>
 - Show all products list with their information;
 - Change dates of production and expiration for product;
 - Change label for product;
 - Delete product;
-- Send notification to user when some product about the end of expiry date.
 """
 
 PRODUCT_INFO = """

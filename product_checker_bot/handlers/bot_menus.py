@@ -53,7 +53,7 @@ def edit_product_inline_sub_menu(product_id: int) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(keyboard)
 
 
-def main_menu():
+def _main_menu():
     # Define the buttons of keyboard
     keyboard = [
         [KeyboardButton(message_texts.MYPROD_BUTTON_TEXT)],
@@ -65,11 +65,11 @@ def main_menu():
 
 
 # Define the function to create the menu
-async def init_main_menu(update: Update):
+async def _init_main_menu(update: Update):
     if not update.message:
         raise ValueError("update.message is None")
     await update.message.reply_text(
-        message_texts.PRESS_MENU_BUTTON, reply_markup=main_menu()
+        message_texts.PRESS_MENU_BUTTON, reply_markup=_main_menu()
     )
 
 
@@ -80,5 +80,5 @@ async def add_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "has_main_menu" in context.chat_data
             and not context.chat_data["has_main_menu"]
         ):
-            await init_main_menu(update)
+            await _init_main_menu(update)
             context.chat_data["has_main_menu"] = True

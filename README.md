@@ -1,7 +1,7 @@
 # product_checker
 
 This app can generate and store information about the products (e.g. food from the supermarket) from their photos. 
-Can send notifications about the end of expiry date.
+It can send notifications about the end of expiry date.
 
 The app realized as Telegram bot.
 
