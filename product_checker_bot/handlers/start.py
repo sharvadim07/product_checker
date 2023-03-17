@@ -24,6 +24,5 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         chat_id=update.effective_chat.id,
         text=message_texts.GREETNGS.format(username=update.effective_user.username),
         disable_notification=True,
-        parse_mode="html",
     )
     await bot_menus.add_main_menu(update, context)

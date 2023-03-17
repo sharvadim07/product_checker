@@ -1,10 +1,10 @@
 [tool.poetry]
 name = "product-checker"
 version = "0.1.0"
-description = "Give product info from its photo"
+description = "This app can generate and store information about the products (e.g. food from the supermarket) from their photos. It can send notifications about the end of expiry date."
 authors = ["Vadim <sharvadim07@yandex.ru>"]
 readme = "README.md"
-packages = [{include = "product_checker"}]
+packages = [{include = "product_checker_bot"}]
 
 [tool.poetry.dependencies]
 python = ">=3.11,<3.12"

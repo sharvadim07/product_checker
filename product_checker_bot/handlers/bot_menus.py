@@ -9,7 +9,8 @@ from telegram import (
     KeyboardButton,
     Update,
 )
-import message_texts
+
+from product_checker_bot import message_texts
 
 PREFIX_EDIT_PRODUCT_DATES = "edit_product_dates"
 PREFIX_EDIT_LABEL = "edit_label"
