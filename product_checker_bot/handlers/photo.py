@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, Dict
 from minio.api import ObjectWriteResult
 from io import BytesIO
 
@@ -21,16 +21,29 @@ from product_checker_bot import db
 
 
 async def photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if context.chat_data and bot_menus.PREFIX_EDIT_LABEL in context.chat_data:
+    if not update.message:
+        raise ValueError("update.message is None")
+    if not isinstance(context.chat_data, Dict):
+        raise ValueError("context.chat_data is None")
+    if bot_menus.PREFIX_EDIT_LABEL in context.chat_data:
         try:
             await edit_photo_label(update, context)
         except ValueError as e:
-            raise ValueError(e)
+            await update.message.reply_text(
+                message_texts.BAD_PHOTO_UPLOAD, disable_notification=True
+            )
+            raise e
+        finally:
+            context.chat_data[bot_menus.PREFIX_EDIT_LABEL].pop()
     else:
         try:
             await photo_simple_upload(update, context)
         except ValueError as e:
-            raise ValueError(e)
+            await update.message.reply_text(
+                message_texts.BAD_PHOTO_UPLOAD, disable_notification=True
+            )
+            raise e
+    if bot_menus.MAIN_MENU_FLAG not in context.chat_data:
         await bot_menus.add_main_menu(update, context)
 
 
@@ -95,8 +108,7 @@ async def photo_simple_upload(update: Update, context: ContextTypes.DEFAULT_TYPE
     if not update.message:
         raise ValueError("update.message is None")
     # Get user and add new product
-    bot_user = await db.get_add_bot_user(update.effective_user.id)
-    cur_product = await db.new_user_product(bot_user)
+    cur_product, bot_user = await db.new_user_product(update.effective_user.id)
     minio_res, downloaded_photo = await photo_label_update(
         update=update,
         context=context,
@@ -104,7 +116,9 @@ async def photo_simple_upload(update: Update, context: ContextTypes.DEFAULT_TYPE
         product_id=cur_product.product_id,
     )
     # Update product in DB
-    await db.update_product(cur_product=cur_product, label_path=minio_res.object_name)
+    cur_product = await db.update_product(
+        product_id=cur_product.product_id, label_path=minio_res.object_name
+    )
     # Replace user photo to mesage with product info
     product_message = await replace_user_product_photo(
         update=update,
@@ -118,8 +132,8 @@ async def photo_simple_upload(update: Update, context: ContextTypes.DEFAULT_TYPE
     )
     if prod_date or exp_date:
         # Update product in DB
-        await db.update_product(
-            cur_product=cur_product, prod_date=prod_date, exp_date=exp_date
+        cur_product = await db.update_product(
+            product_id=cur_product.product_id, prod_date=prod_date, exp_date=exp_date
         )
         # Update product caption
         await product_message.edit_caption(
@@ -154,8 +168,8 @@ async def edit_photo_label(update: Update, context: ContextTypes.DEFAULT_TYPE):
             product_id=cur_product.product_id,
         )
         # Update new product in DB
-        await db.update_product(
-            cur_product=cur_product, label_path=minio_res.object_name
+        cur_product = await db.update_product(
+            product_id=cur_product.product_id, label_path=minio_res.object_name
         )
         if not query.message:
             raise ValueError("query.message is None")
@@ -171,4 +185,3 @@ async def edit_photo_label(update: Update, context: ContextTypes.DEFAULT_TYPE):
             ),
             reply_markup=bot_menus.edit_product_inline_menu(cur_product.product_id),
         )
-    context.chat_data["edit_label"].pop()

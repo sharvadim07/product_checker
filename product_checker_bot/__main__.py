@@ -8,12 +8,13 @@ from telegram.ext import (
 )
 
 
+from product_checker_bot import handlers, services
+from product_checker_bot.config import config
+
+
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
 )
-
-from product_checker_bot import handlers, services
-from product_checker_bot.config import config
 
 
 def main():
@@ -38,9 +39,10 @@ def main():
 if __name__ == "__main__":
     try:
         main()
-    except Exception:
-        import traceback
+    except Exception as e:
+        # import traceback
 
-        logging.warning(traceback.format_exc())
+        # logging.warning(traceback.format_exc())
+        logging.warning(e)
     finally:
         logging.info("Bot stopped.")

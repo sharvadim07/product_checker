@@ -1,9 +1,9 @@
-from dataclasses import dataclass
-from typing import Tuple, List, Dict, Optional
-from datetime import date
 from collections import OrderedDict
-import aiosqlite
+from dataclasses import dataclass
+from datetime import date
+from typing import Optional, Tuple
 
+import aiosqlite
 from config import config
 
 
@@ -23,7 +23,7 @@ class Product:
     date_exp DATE,
     label_path VARCHAR(200),
     telegram_user_id INT NOT NULL,
-    FOREIGN KEY (telegram_user_id) REFERENCES user (telegram_user_id) 
+    FOREIGN KEY (telegram_user_id) REFERENCES user (telegram_user_id)
 """
 
 
@@ -46,22 +46,24 @@ async def get_bot_users_and_products_db() -> OrderedDict[int, BotUser]:
         db.row_factory = aiosqlite.Row
         async with db.execute(
             """
-            SELECT *
+            SELECT *,
+                   bot_user.created_at AS bot_user_created_at,
+                   product.created_at AS product_created_at
               FROM bot_user
               LEFT JOIN products USING(telegram_user_id)
-             ORDER BY telegram_user_id;
+             ORDER BY telegram_user_id, product.date_exp DESC;
             """
         ) as cursor:
             async for row in cursor:
                 if row["telegram_user_id"] not in bot_users:
                     bot_users[row["telegram_user_id"]] = BotUser(
                         row["telegram_user_id"],
-                        row["created_at"],
+                        row["bot_user_created_at"],
                         OrderedDict(
                             {
                                 row["product_id"]: Product(
                                     row["product_id"],
-                                    row["created_at"],
+                                    row["product_created_at"],
                                     row["date_prod"],
                                     row["date_exp"],
                                     row["label_path"],
@@ -74,7 +76,7 @@ async def get_bot_users_and_products_db() -> OrderedDict[int, BotUser]:
                     if bot_user and bot_user.products:
                         bot_user.products[row["product_id"]] = Product(
                             row["product_id"],
-                            row["created_at"],
+                            row["product_created_at"],
                             row["date_prod"],
                             row["date_exp"],
                             row["label_path"],
@@ -82,7 +84,7 @@ async def get_bot_users_and_products_db() -> OrderedDict[int, BotUser]:
     return bot_users
 
 
-async def get_all_bot_users() -> OrderedDict[int, BotUser]:
+async def get_all_bot_users_db() -> OrderedDict[int, BotUser]:
     bot_users: OrderedDict[int, BotUser] = OrderedDict()
     async with aiosqlite.connect(config.SQLITE_DB_FILE) as db:
         db.row_factory = aiosqlite.Row
@@ -129,24 +131,26 @@ async def get_bot_user_db(telegram_user_id: int) -> Optional[BotUser]:
         db.row_factory = aiosqlite.Row
         async with db.execute(
             f"""
-            SELECT *
+            SELECT *,
+                   bot_user.created_at AS bot_user_created_at,
+                   product.created_at AS product_created_at
               FROM bot_user
               LEFT JOIN product USING(telegram_user_id)
              WHERE telegram_user_id = {telegram_user_id}
-             ORDER BY product_id;
+             ORDER BY product.date_exp DESC;
             """
         ) as cursor:
             async for row in cursor:
-                if row["product_id"] != None:
+                if row["product_id"] is not None:
                     if not bot_user:
                         bot_user = BotUser(
                             row["telegram_user_id"],
-                            row["created_at"],
+                            row["bot_user_created_at"],
                             OrderedDict(
                                 {
                                     row["product_id"]: Product(
                                         row["product_id"],
-                                        row["created_at"],
+                                        row["product_created_at"],
                                         row["date_prod"],
                                         row["date_exp"],
                                         row["label_path"],
@@ -157,7 +161,7 @@ async def get_bot_user_db(telegram_user_id: int) -> Optional[BotUser]:
                     else:
                         bot_user.products[row["product_id"]] = Product(
                             row["product_id"],
-                            row["created_at"],
+                            row["product_created_at"],
                             row["date_prod"],
                             row["date_exp"],
                             row["label_path"],
@@ -178,6 +182,17 @@ async def new_user_product_db(telegram_user_id: int) -> None:
         await db.commit()
 
 
+async def remove_all_products_db(telegram_user_id: int) -> None:
+    async with aiosqlite.connect(config.SQLITE_DB_FILE) as db:
+        await db.execute(
+            f"""
+            DELETE FROM product
+             WHERE telegram_user_id == "{telegram_user_id}";
+            """
+        )
+        await db.commit()
+
+
 async def get_product_db(product_id: int) -> Optional[Product]:
     product = None
     async with aiosqlite.connect(config.SQLITE_DB_FILE) as db:
@@ -190,7 +205,7 @@ async def get_product_db(product_id: int) -> Optional[Product]:
             """
         ) as cursor:
             async for row in cursor:
-                if row["product_id"] != None:
+                if row["product_id"] is not None:
                     if not product:
                         product = Product(
                             row["product_id"],
@@ -202,7 +217,7 @@ async def get_product_db(product_id: int) -> Optional[Product]:
     return product
 
 
-async def update_product_db(
+async def _update_product_db(
     product_id: int,
     label_path: Optional[str] = None,
     date_prod: Optional[str] = None,
@@ -213,8 +228,8 @@ async def update_product_db(
             f"""
             UPDATE product
                SET label_path = IIF("{label_path}" = "None", label_path, "{label_path}"),
-                   date_prod = IIF("{date_prod}" = "None", date_prod, "{date_prod}"),
-                   date_exp = IIF("{date_exp}" = "None", date_exp, "{date_exp}")
+                   date_prod = IIF("{date_prod}" = "None", date_prod, DATE("{date_prod}")),
+                   date_exp = IIF("{date_exp}" = "None", date_exp, DATE("{date_exp}"))
              WHERE product_id = "{product_id}";
             """
         )
@@ -244,37 +259,46 @@ async def get_add_bot_user(telegram_user_id: int) -> BotUser:
     return bot_user
 
 
-async def new_user_product(bot_user: BotUser) -> Product:
+async def new_user_product(telegram_user_id: int) -> Tuple[Product, BotUser]:
+    # Get user with products
+    bot_user = await get_add_bot_user(telegram_user_id)
     # Add new product to DB
     await new_user_product_db(bot_user.telegram_user_id)
     # Get user with products
-    updated_bot_user = await get_bot_user_db(bot_user.telegram_user_id)
-    if not updated_bot_user:
-        raise ValueError("bot_user is None")
-    if not updated_bot_user.products:
+    bot_user = await get_add_bot_user(telegram_user_id)
+    if not bot_user.products:
         raise ValueError("bot_user.products is None")
-    bot_user.products = updated_bot_user.products
-    return list(bot_user.products.values())[-1]
+    return (
+        max(bot_user.products.values(), key=lambda v: v.product_id),
+        bot_user,
+    )
 
 
 async def update_product(
-    cur_product: Product,
+    product_id: int,
     label_path: Optional[str] = None,
     prod_date: Optional[Tuple[str, date]] = None,
     exp_date: Optional[Tuple[str, date]] = None,
-) -> None:
-    if label_path:
-        cur_product.label_path = label_path
+) -> Product:
+    prod_date_str = None
+    exp_date_str = None
     if prod_date:
-        cur_product.date_prod = prod_date[1].strftime("%d/%m/%Y")
+        # prod_date_str = prod_date[1].strftime("%d/%m/%Y")
+        prod_date_str = prod_date[1].strftime("%Y-%m-%d")
     if exp_date:
-        cur_product.date_exp = exp_date[1].strftime("%d/%m/%Y")
-    await update_product_db(
-        product_id=cur_product.product_id,
-        label_path=cur_product.label_path,
-        date_prod=cur_product.date_prod,
-        date_exp=cur_product.date_exp,
+        # exp_date_str = exp_date[1].strftime("%d/%m/%Y")
+        exp_date_str = exp_date[1].strftime("%Y-%m-%d")
+    await _update_product_db(
+        product_id=product_id,
+        label_path=label_path,
+        date_prod=prod_date_str,
+        date_exp=exp_date_str,
     )
+    product = await get_product_db(product_id)
+    if not product:
+        raise ValueError("Product not updated in DB.")
+    else:
+        return product
 
 
 async def remove_product(cur_product: Product, bot_user: BotUser) -> None:
