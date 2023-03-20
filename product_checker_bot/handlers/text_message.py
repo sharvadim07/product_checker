@@ -1,8 +1,8 @@
-from typing import Tuple, List
+from typing import Tuple, List, Dict
 from telegram.ext import (
     ContextTypes,
 )
-from telegram import Update, CallbackQuery, error
+from telegram import Update, CallbackQuery
 from product_checker_bot import message_texts
 from product_checker_bot.services.dates_recognition import check_text
 from product_checker_bot.services.dates_recognition import get_prod_exp_dates
@@ -17,18 +17,57 @@ async def text_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         raise ValueError("update.callback_query is None")
     if not update.message.text:
         raise ValueError("update.message.text is None")
-    if update.message.text == message_texts.MYPROD_BUTTON_TEXT:
-        await show_user_products(update, context)
-    elif update.message.text == message_texts.HELP_BUTTON_TEXT:
+    if not update.effective_user:
+        raise ValueError("update.effective_user is None")
+    if not isinstance(context.chat_data, Dict):
+        raise ValueError("context.chat_data is None")
+    if update.message.text == message_texts.MYPROD_BUTTON:
+        try:
+            await show_user_products(update, context)
+        except Exception:
+            await update.message.reply_text(
+                message_texts.BAD_SHOW_PRODUCTS, disable_notification=True
+            )
+    elif update.message.text == message_texts.HELP_BUTTON:
         await help_(update, context)
-    elif context.chat_data and bot_menus.PREFIX_EDIT_PRODUCT_DATES in context.chat_data:
+    elif bot_menus.PREFIX_EDIT_PRODUCT_DATES in context.chat_data:
         prod_to_edit = context.chat_data[bot_menus.PREFIX_EDIT_PRODUCT_DATES]
         try:
             await update_product_dates(prod_to_edit, update.message.text)
-        except ValueError as e:
-            await update.message.reply_text(message_texts.BAD_UPDATE_PRODUCT_DATES)
-            raise ValueError(e)
-        context.chat_data[bot_menus.PREFIX_EDIT_PRODUCT_DATES].pop()
+        except Exception as e:
+            await update.message.reply_text(
+                message_texts.BAD_UPDATE_PRODUCT_DATES, disable_notification=True
+            )
+            raise e
+        finally:
+            context.chat_data[bot_menus.PREFIX_EDIT_PRODUCT_DATES].pop()
+    elif update.message.text == message_texts.DELETE_ALL_PRODUCTS_BUTTON:
+        await bot_menus.add_yes_no_menu(update, context)
+        context.chat_data[bot_menus.PREFIX_DEL_PRODUCTS] = True
+    elif (
+        bot_menus.PREFIX_DEL_PRODUCTS in context.chat_data
+        and context.chat_data[bot_menus.PREFIX_DEL_PRODUCTS]
+        and update.message.text == message_texts.YES_BUTTON
+    ):
+        try:
+            await db.remove_all_products_db(update.effective_user.id)
+        except Exception as e:
+            await update.message.reply_text(
+                message_texts.BAD_DELETE_PRODUCT_DATES, disable_notification=True
+            )
+            raise e
+        finally:
+            await bot_menus.add_main_menu(update, context)
+            context.chat_data[bot_menus.PREFIX_DEL_PRODUCTS] = False
+    elif (
+        bot_menus.PREFIX_DEL_PRODUCTS in context.chat_data
+        and context.chat_data[bot_menus.PREFIX_DEL_PRODUCTS]
+        and update.message.text == message_texts.NO_BUTTON
+    ):
+        await bot_menus.add_main_menu(update, context)
+        context.chat_data[bot_menus.PREFIX_DEL_PRODUCTS] = False
+    elif update.message.text != message_texts.PRESS_MENU:
+        await bot_menus.add_main_menu(update, context)
 
 
 async def show_user_products(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -84,18 +123,21 @@ async def update_product_dates(
             raise ValueError("Got bad dates from user.")
         cur_product = await db.get_product_db(product_id)
         if cur_product:
-            await db.update_product(cur_product, prod_date=prod_date, exp_date=exp_date)
+            cur_product = await db.update_product(
+                product_id=cur_product.product_id,
+                prod_date=prod_date,
+                exp_date=exp_date,
+            )
             if not query.message:
                 raise ValueError("query.message is None")
-            try:
+            new_text = message_texts.PRODUCT_INFO.format(
+                product_id=cur_product.product_id,
+                date_prod=cur_product.date_prod,
+                date_exp=cur_product.date_exp,
+                label_path=cur_product.label_path,
+            )
+            if new_text != query.message.caption:
                 await query.message.edit_caption(
-                    message_texts.PRODUCT_INFO.format(
-                        product_id=cur_product.product_id,
-                        date_prod=cur_product.date_prod,
-                        date_exp=cur_product.date_exp,
-                        label_path=cur_product.label_path,
-                    ),
+                    new_text,
                     reply_markup=bot_menus.edit_product_inline_menu(product_id),
                 )
-            except error.BadRequest as e:
-                raise ValueError(e)
