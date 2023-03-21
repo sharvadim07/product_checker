@@ -63,6 +63,7 @@ def _main_menu():
         [KeyboardButton(message_texts.MYPROD_BUTTON)],
         [KeyboardButton(message_texts.DELETE_ALL_PRODUCTS_BUTTON)],
         [KeyboardButton(message_texts.HELP_BUTTON)],
+        [KeyboardButton(message_texts.CANCEL_BUTTON)],
     ]
     return ReplyKeyboardMarkup(
         keyboard, resize_keyboard=True

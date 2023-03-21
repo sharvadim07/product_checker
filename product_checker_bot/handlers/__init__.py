@@ -8,6 +8,7 @@ from .inline_menu_button import inline_menu_button
 from .photo import photo
 from .start import start
 from .text_message import text_message
+from ..alarm import update_product_alarm, remove_product_alarm
 
 __all__ = [
     "add_main_menu",
@@ -18,4 +19,6 @@ __all__ = [
     "photo",
     "start",
     "text_message",
+    "update_product_alarm",
+    "remove_product_alarm",
 ]

@@ -15,9 +15,11 @@ The app realized as Telegram bot.
 - Change dates of production and expiration for product;
 - Change label for product;
 - Delete product;
+- Delete all products;
+- Send notification to user when some product about the end of expiry date;
+- Sort products list by their expiration;
 
 
 # TODO:
-- Send notification to user when some product about the end of expiry date;
-- Sort products list by their expiration;
 - Deploy on server;
+- Testing and debugging;

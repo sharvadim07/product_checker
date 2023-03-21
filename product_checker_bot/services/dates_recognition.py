@@ -22,12 +22,14 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
 )
 
-_DATE_PATTERNS = [
-    r"\d{4}[-/.\s]\d{2}[-/.\s]\d{2}",  # matches yyyy/mm/dd format
-    r"\d{2}[-/.\s]\d{2}[-/.\s]\d{4}",  # matches dd/mm/yyyy format
-    r"\d{2}[-/.\s]\d{2}[-/.\s]\d{2}",  # matches dd/mm/yy format
-]
-_COMPILED_DATE_PATTERNS = [re.compile(patt) for patt in _DATE_PATTERNS]
+_DATE_PATTERNS = {
+    "yyyy/mm/dd": r"\d{4}[-/.\s]\d{2}[-/.\s]\d{2}",  # matches yyyy/mm/dd format
+    "dd/mm/yyyy": r"\d{2}[-/.\s]\d{2}[-/.\s]\d{4}",  # matches dd/mm/yyyy format
+    "dd/mm/yy": r"\d{2}[-/.\s]\d{2}[-/.\s]\d{2}",  # matches dd/mm/yy format
+}
+_COMPILED_DATE_PATTERNS = {
+    patt_type: re.compile(patt) for patt_type, patt in _DATE_PATTERNS.items()
+}
 _OCR_CONFIG = "--psm 11 --oem 3 -c tessedit_char_whitelist=-./0123456789"
 _PREBLUR_LEVELS = [False]
 _BRIGHTNESS_LEVELS = [0, -40, 10]
@@ -111,7 +113,7 @@ class Setting:
     @recognized_text.setter
     def recognized_text(self, text: str):
         self._recognized_text = text
-        self._recognized_text_len = len(re.sub("\n|\s", "", text))
+        self._recognized_text_len = len(re.sub(r"\n|\s", "", text))
 
     @property
     def recognized_text_len(self) -> int:
@@ -153,20 +155,23 @@ def check_text(
     res_parsed: OrderedDict[str, date] = OrderedDict()
     if len(text) < min_text_len:
         return res_parsed
-    dates_strs: List[str] = []
-    for compiled_pattern in _COMPILED_DATE_PATTERNS:
+    for patt_type, compiled_pattern in _COMPILED_DATE_PATTERNS.items():
         res = compiled_pattern.findall(text)
         if len(res) > 0:
-            dates_strs += res
-            break
-    for date_str in res:
-        try:
-            parsed_date = parse(date_str, dayfirst=True).date()
-            if abs(date.today().year - parsed_date.year) <= diff_years:
-                res_parsed[date_str] = parsed_date
-                logging.info(parsed_date)
-        except ValueError:
-            pass
+            try:
+                for date_str in res:
+                    # Only first pattern with year first
+                    if patt_type == "yyyy/mm/dd":
+                        parsed_date = parse(date_str, yearfirst=True).date()
+                    else:
+                        parsed_date = parse(date_str, dayfirst=True).date()
+                    if abs(date.today().year - parsed_date.year) <= diff_years:
+                        res_parsed[date_str] = parsed_date
+                        logging.info(parsed_date)
+            except ValueError:
+                continue
+            finally:
+                break
     return res_parsed
 
 
@@ -383,7 +388,7 @@ def dates_recognition(
 def main():
     data_dir = "data/bot_test/"
     img = get_img_from_path(f"{data_dir}/recieved_image.png")
-    recognised_dates = dates_recognition(img, data_dir)
+    dates_recognition(img, data_dir)
 
 
 if __name__ == "__main__":

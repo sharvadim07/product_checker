@@ -1,9 +1,12 @@
 from collections import OrderedDict
 from dataclasses import dataclass
 from datetime import date
+from datetime import datetime
+from dateutil.parser import parse
 from typing import Optional, Tuple
 
 import aiosqlite
+import sqlite3
 from config import config
 
 
@@ -14,6 +17,29 @@ class Product:
     date_prod: Optional[str]
     date_exp: Optional[str]
     label_path: Optional[str]
+
+    def shelf_life_days(self) -> Optional[int]:
+        if self.date_exp:
+            if self.date_prod:
+                return (parse(self.date_exp) - parse(self.date_prod)).days
+            else:
+                return (parse(self.date_exp) - parse(self.created_at)).days
+        else:
+            return None
+
+    def remaining_shelf_life_days(self) -> Optional[int]:
+        if self.date_exp:
+            return (parse(self.date_exp) - datetime.now()).days
+        else:
+            return None
+
+    def remaining_shelf_life_percent(self) -> Optional[int]:
+        shelf_life_days = self.shelf_life_days()
+        remaining_shelf_life_days = self.remaining_shelf_life_days()
+        if shelf_life_days and remaining_shelf_life_days:
+            return round((remaining_shelf_life_days / shelf_life_days) * 100)
+        else:
+            return None
 
 
 """
@@ -40,22 +66,23 @@ class BotUser:
 """
 
 
-async def get_bot_users_and_products_db() -> OrderedDict[int, BotUser]:
+def get_bot_users_and_products_db() -> OrderedDict[int, BotUser]:
     bot_users: OrderedDict[int, BotUser] = OrderedDict()
-    async with aiosqlite.connect(config.SQLITE_DB_FILE) as db:
-        db.row_factory = aiosqlite.Row
-        async with db.execute(
+    with sqlite3.connect(config.SQLITE_DB_FILE) as db:
+        db.row_factory = sqlite3.Row
+        cursor = db.execute(
             """
             SELECT *,
                    bot_user.created_at AS bot_user_created_at,
                    product.created_at AS product_created_at
               FROM bot_user
-              LEFT JOIN products USING(telegram_user_id)
+              LEFT JOIN product USING(telegram_user_id)
              ORDER BY telegram_user_id, product.date_exp DESC;
             """
-        ) as cursor:
-            async for row in cursor:
-                if row["telegram_user_id"] not in bot_users:
+        )
+        for row in cursor:
+            if row["telegram_user_id"] not in bot_users:
+                if row["product_id"] is not None:
                     bot_users[row["telegram_user_id"]] = BotUser(
                         row["telegram_user_id"],
                         row["bot_user_created_at"],
@@ -72,8 +99,13 @@ async def get_bot_users_and_products_db() -> OrderedDict[int, BotUser]:
                         ),
                     )
                 else:
-                    bot_user = bot_users.get(row["telegram_user_id"])
-                    if bot_user and bot_user.products:
+                    bot_users[row["telegram_user_id"]] = BotUser(
+                        row["telegram_user_id"], row["bot_user_created_at"], None
+                    )
+            else:
+                bot_user = bot_users.get(row["telegram_user_id"])
+                if bot_user and bot_user.products:
+                    if row["product_id"] is not None:
                         bot_user.products[row["product_id"]] = Product(
                             row["product_id"],
                             row["product_created_at"],
