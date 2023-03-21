@@ -9,6 +9,7 @@ from telegram import (
 from product_checker_bot import message_texts
 from product_checker_bot.handlers import bot_menus
 from product_checker_bot import db
+from product_checker_bot import alarm
 
 
 async def inline_menu_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -30,31 +31,23 @@ async def inline_menu_button(update: Update, context: ContextTypes.DEFAULT_TYPE)
         await query.edit_message_reply_markup(
             reply_markup=bot_menus.edit_product_inline_menu(product_id)
         )
-        if bot_menus.PREFIX_EDIT_PRODUCT_DATES not in context.chat_data:
-            context.chat_data[bot_menus.PREFIX_EDIT_PRODUCT_DATES] = [
-                (product_id, query)
-            ]
-        else:
-            context.chat_data[bot_menus.PREFIX_EDIT_PRODUCT_DATES].append(
-                (product_id, query)
-            )
+        context.chat_data[bot_menus.PREFIX_EDIT_PRODUCT_DATES] = (product_id, query)
     elif str(query.data).startswith(bot_menus.PREFIX_EDIT_LABEL):
         await query.message.reply_text(
-            message_texts.SEND_NEW_LABEL_PHOTO, disable_notification=True
+            message_texts.SEND_NEW_LABEL_PHOTO,
+            disable_notification=True,
         )
         await query.edit_message_reply_markup(
             reply_markup=bot_menus.edit_product_inline_menu(product_id)
         )
-        if bot_menus.PREFIX_EDIT_LABEL not in context.chat_data:
-            context.chat_data[bot_menus.PREFIX_EDIT_LABEL] = [(product_id, query)]
-        else:
-            context.chat_data[bot_menus.PREFIX_EDIT_LABEL].append((product_id, query))
+        context.chat_data[bot_menus.PREFIX_EDIT_LABEL] = (product_id, query)
     elif str(query.data).startswith(bot_menus.PREFIX_EDIT):
         await query.edit_message_reply_markup(
             reply_markup=bot_menus.edit_product_inline_sub_menu(product_id)
         )
     elif str(query.data).startswith(bot_menus.PREFIX_REMOVE):
         await db.remove_product_db(product_id)
+        alarm.remove_product_alarm(context, update.effective_user.id, product_id)
         await query.message.delete()
     elif str(query.data).startswith(bot_menus.PREFIX_CANCEL):
         await query.edit_message_reply_markup(

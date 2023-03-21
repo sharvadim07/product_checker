@@ -10,6 +10,7 @@ from telegram.ext import (
 
 from product_checker_bot import handlers, services
 from product_checker_bot.config import config
+from product_checker_bot.alarm import init_all_alarms
 
 
 logging.basicConfig(
@@ -22,6 +23,10 @@ def main():
 
     # Add minio client to application data
     application.bot_data["my_minio"] = services.MyMinioClient(config.MINIO_CREDENTIALS)
+    # Create queue
+    # job_queue = JobQueue()
+    # job_queue.set_application(application)
+    # job_queue.start()
 
     # Add the handlers to the dispatcher
     application.add_handler(
@@ -32,6 +37,9 @@ def main():
     application.add_handler(start_handler)
     photo_handler = MessageHandler(filters.PHOTO, handlers.photo)
     application.add_handler(photo_handler)
+
+    # Alarms initialisation
+    init_all_alarms(application)
 
     application.run_polling()
 
