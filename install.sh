@@ -6,6 +6,18 @@ set -e
 
 echo ${WDIR}
 
+# Update
+apt update && apt upgrade -y
+
+# Install dependencies with apt
+apt install -y build-essential zlib1g-dev \
+libncurses5-dev libgdbm-dev libnss3-dev libssl-dev \
+libreadline-dev libffi-dev libsqlite3-dev wget libbz2-dev
+apt install -y git wget curl pkg-config sqlite3 tesseract-ocr
+
+# Clean up
+apt clean && rm -rf /var/lib/apt/lists/*
+
 # Python-3.11
 cd ${WDIR}
 wget https://www.python.org/ftp/python/3.11.1/Python-3.11.1.tgz

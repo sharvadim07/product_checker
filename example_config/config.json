@@ -1,0 +1,6 @@
+{
+    "TELEGRAM_BOT_TOKEN":"",
+    "DATA_BOT_TEST_DIR":"data/bot_test",
+    "SQLITE_DB_FILE":"data/db.sqlite3",
+    "MINIO_CREDENTIALS":"data/credentials.json"
+}
