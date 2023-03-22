@@ -170,8 +170,6 @@ def check_text(
                         logging.info(parsed_date)
             except ValueError:
                 continue
-            finally:
-                break
     return res_parsed
 
 
