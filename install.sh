@@ -14,6 +14,7 @@ apt install -y build-essential zlib1g-dev \
 libncurses5-dev libgdbm-dev libnss3-dev libssl-dev \
 libreadline-dev libffi-dev libsqlite3-dev wget libbz2-dev
 apt install -y git wget curl pkg-config sqlite3 tesseract-ocr
+apt install ffmpeg libsm6 libxext6  -y
 
 # Clean up
 apt clean && rm -rf /var/lib/apt/lists/*

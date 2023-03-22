@@ -6,14 +6,15 @@ repo="https://github.com/sharvadim07/product_checker" \
 creator="Vadim Sharov" \
 version="0.1.0"
 # You can set these arguments when you build image
-ARG BOT_CONFIG[=./data/config.json]
-ARG MINIO_CREDENTIALS[=./data/credentials.json]
-WORKDIR /usr/src
+ARG BOT_CONFIG
+ARG MINIO_CREDENTIALS
+WORKDIR /usr/src/
 ENV WDIR=/usr/src
 COPY ./install.sh ./
 #CMD [ "/bin/bash" ]
 RUN chmod +x ./install.sh && ./install.sh
-COPY ${BOT_CONFIG} ./product_checker/data/config.json
-COPY ${MINIO_CREDENTIALS} ./product_checker/data/credentials.json
+COPY ${BOT_CONFIG:-data/config.json} ./product_checker/data/
+COPY ${MINIO_CREDENTIALS:-data/credentials.json} ./product_checker/data/
 EXPOSE 9000
-ENTRYPOINT [ "/root/.local/bin/poetry", "run", "python", "-m product_checker_bot" ]
+WORKDIR /usr/src/product_checker
+ENTRYPOINT [ "/root/.local/bin/poetry", "run", "python", "-m", "product_checker_bot" ]
