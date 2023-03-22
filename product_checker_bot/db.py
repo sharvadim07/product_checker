@@ -7,7 +7,7 @@ from typing import Optional, Tuple
 
 import aiosqlite
 import sqlite3
-from config import config
+from product_checker_bot.config import config
 
 
 @dataclass

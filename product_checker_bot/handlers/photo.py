@@ -12,7 +12,7 @@ from telegram import (
 )
 
 from product_checker_bot import message_texts
-from config import config
+from product_checker_bot.config import config
 from product_checker_bot.services.dates_recognition import dates_recognition
 from product_checker_bot.services.dates_recognition import bytearray_to_img
 from product_checker_bot.services.dates_recognition import get_prod_exp_dates

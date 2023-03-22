@@ -37,9 +37,9 @@ git clone https://github.com/sharvadim07/product_checker.git
 
 # Poetry install
 cd ${WDIR}/product_checker
-poetry install
+/root/.local/bin/poetry install
 
 # Fill DB
-cd ${WDIR}
+cd ${WDIR}/product_checker
 mkdir -p ./data
 cat ./product_checker_bot/db.sql | sqlite3 ./data/db.sqlite3
