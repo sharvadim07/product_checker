@@ -16,4 +16,4 @@ RUN chmod +x ./install.sh && ./install.sh
 COPY ${BOT_CONFIG} ./product_checker/data/config.json
 COPY ${MINIO_CREDENTIALS} ./product_checker/data/credentials.json
 EXPOSE 9000
-ENTRYPOINT [ "poetry", "run", "python", "-m product_checker_bot" ]
+ENTRYPOINT [ "/root/.local/bin/poetry", "run", "python", "-m product_checker_bot" ]
