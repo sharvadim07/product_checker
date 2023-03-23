@@ -1,4 +1,4 @@
-FROM debian:10
+FROM debian:11
 LABEL \
 name="product_checker_bot docker" \
 description="Docker for product_checker telegram bot" \
