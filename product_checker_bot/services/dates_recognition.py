@@ -211,7 +211,8 @@ def recognize_full_image(
     max_number_dates: int = 0,
 ) -> None:
     recognition_log_file = f"{data_dir}/recognized_log.txt"
-    flush_file(recognition_log_file)
+    # DEBUG
+    # flush_file(recognition_log_file)
     for cur_setting in tqdm(settings):
         # DEBUG
         # Image.fromarray(cur_setting.thresh).save(f"{data_dir}/full_thresh.png")
@@ -234,7 +235,8 @@ def recognize_tiles_image(
     if settings_num:
         settings = settings[:settings_num]
     recognition_log_file = f"{data_dir}/recognized_tiles_log.txt"
-    flush_file(recognition_log_file)
+    # DEBUG
+    # flush_file(recognition_log_file)
     for patch_reduction_factor in reductions_factors:
         for cur_setting in tqdm(settings):
             patch_size = sorted(
