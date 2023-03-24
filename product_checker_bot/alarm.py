@@ -2,6 +2,7 @@ from telegram.ext import (
     ContextTypes,
 )
 from datetime import timedelta
+from datetime import datetime
 from dateutil.parser import parse
 
 
@@ -69,6 +70,7 @@ def _add_first_alarm(
     alarm_datetime = parse(product.date_exp) - timedelta(
         days=int(shelf_life_days * (remaining_shelf_life_percent / 100))
     )
+    # Set hour for alarm
     alarm_datetime = alarm_datetime.replace(
         hour=day_time_hour,
         minute=0,
@@ -99,9 +101,16 @@ def _add_second_alarm(
     days_before: int,
 ):
     """Add second alarm which will be activated when expiry date reached"""
+    # Set hour for alarm
     alarm_datetime = (parse(product.date_exp) - timedelta(days=days_before)).replace(
         hour=day_time_hour, minute=0, second=0
     )
+    # Check when if it is already happened and next day alarm
+    datetime_now = datetime.now()
+    if alarm_datetime < datetime_now:
+        alarm_datetime = (datetime_now + timedelta(days=1)).replace(
+            hour=day_time_hour, minute=0, second=0
+        )
     context.job_queue.run_repeating(
         callback=_alarm,
         interval=timedelta(hours=alarm_repeats_hours),
