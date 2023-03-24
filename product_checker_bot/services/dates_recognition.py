@@ -12,7 +12,6 @@ import cv2
 import pytesseract
 from deskew import determine_skew
 from sklearn.feature_extraction.image import extract_patches_2d
-from dateutil.parser import parse
 from datetime import date
 from collections import OrderedDict
 from time import time
@@ -23,9 +22,9 @@ logging.basicConfig(
 )
 
 _DATE_PATTERNS = {
-    "yyyy/mm/dd": r"\d{4}[-/.\s]\d{2}[-/.\s]\d{2}",  # matches yyyy/mm/dd format
-    "dd/mm/yyyy": r"\d{2}[-/.\s]\d{2}[-/.\s]\d{4}",  # matches dd/mm/yyyy format
-    "dd/mm/yy": r"\d{2}[-/.\s]\d{2}[-/.\s]\d{2}",  # matches dd/mm/yy format
+    "yyyy/mm/dd": r"\d{4}([-/.\s])\d{2}\1\d{2}",  # matches yyyy/mm/dd format
+    "dd/mm/yyyy": r"\d{2}([-/.\s])\d{2}\1\d{4}",  # matches dd/mm/yyyy format
+    "dd/mm/yy": r"\d{2}([-/.\s])\d{2}\1\d{2}",  # matches dd/mm/yy format
 }
 _COMPILED_DATE_PATTERNS = {
     patt_type: re.compile(patt) for patt_type, patt in _DATE_PATTERNS.items()
@@ -149,6 +148,50 @@ def my_ocr(txt_out_filename: str, thresh: np.ndarray) -> str:
         return ""
 
 
+def check_year(str: str) -> int:
+    try:
+        num = int(float(str))
+        # Only two numbers in year rule
+        # 20th sentury from 0 to 80
+        # 19th sentury from 81 to 99
+        if len(str) == 2:
+            if 0 <= num <= 80:
+                return num + 2000
+            elif 81 <= num <= 99:
+                return num + 1900
+            else:
+                raise ValueError()
+        # Four numbers in year rule
+        elif len(str) == 4 and 1800 <= num <= 2200:
+            return num
+        else:
+            raise ValueError()
+    except Exception:
+        raise ValueError()
+
+
+def check_month(str: str) -> int:
+    try:
+        num = int(float(str))
+        if len(str) == 2 and 1 <= num <= 12:
+            return num
+        else:
+            raise ValueError()
+    except Exception:
+        raise ValueError()
+
+
+def check_day(str: str) -> int:
+    try:
+        num = int(float(str))
+        if len(str) == 2 and 1 <= num <= 31:
+            return num
+        else:
+            raise ValueError()
+    except Exception:
+        raise ValueError()
+
+
 def check_text(
     text: str, diff_years: int = 5, min_text_len: int = 6
 ) -> OrderedDict[str, date]:
@@ -156,15 +199,25 @@ def check_text(
     if len(text) < min_text_len:
         return res_parsed
     for patt_type, compiled_pattern in _COMPILED_DATE_PATTERNS.items():
-        res = compiled_pattern.findall(text)
+        res = [m.group() for m in compiled_pattern.finditer(text)]
         if len(res) > 0:
             try:
                 for date_str in res:
+                    # Split to check
+                    date_vals = re.split(r"-|\.|/|\s", date_str)
                     # Only first pattern with year first
                     if patt_type == "yyyy/mm/dd":
-                        parsed_date = parse(date_str, yearfirst=True).date()
+                        parsed_date = date(
+                            year=check_year(date_vals[0]),
+                            month=check_month(date_vals[1]),
+                            day=check_day(date_vals[2]),
+                        )
                     else:
-                        parsed_date = parse(date_str, dayfirst=True).date()
+                        parsed_date = date(
+                            day=check_day(date_vals[0]),
+                            month=check_month(date_vals[1]),
+                            year=check_year(date_vals[2]),
+                        )
                     if abs(date.today().year - parsed_date.year) <= diff_years:
                         res_parsed[date_str] = parsed_date
                         logging.info(parsed_date)
