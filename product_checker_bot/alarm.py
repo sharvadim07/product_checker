@@ -96,9 +96,10 @@ def _add_second_alarm(
     name: str,
     day_time_hour: int,
     alarm_repeats_hours: int,
+    days_before: int,
 ):
     """Add second alarm which will be activated when expiry date reached"""
-    alarm_datetime = parse(product.date_exp).replace(
+    alarm_datetime = (parse(product.date_exp) - timedelta(days=days_before)).replace(
         hour=day_time_hour, minute=0, second=0
     )
     context.job_queue.run_repeating(
@@ -119,6 +120,7 @@ def update_product_alarm(
     remaining_shelf_life_percent: int = 30,
     day_time_hour: int = 3,
     alarm_repeats_hours: int = 24,
+    second_alarm_days_before: int = 7,
 ) -> None:
     """Update or create product expiry alarm.
     First alarm will at remaining shelf life day, second at the expiry day."""
@@ -149,6 +151,7 @@ def update_product_alarm(
         second_alarm_name,
         day_time_hour,
         alarm_repeats_hours,
+        second_alarm_days_before,
     )
 
 
