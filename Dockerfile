@@ -18,3 +18,4 @@ COPY ${MINIO_CREDENTIALS:-data/credentials.json} ./product_checker/data/
 EXPOSE 9000
 WORKDIR /usr/src/product_checker
 ENTRYPOINT [ "/root/.local/bin/poetry", "run", "python", "-m", "product_checker_bot" ]
+VOLUME [ "/usr/src/product_checker/data" ]
