@@ -1199,6 +1199,18 @@ files = [
 ]
 
 [[package]]
+name = "types-pytz"
+version = "2023.2.0.1"
+description = "Typing stubs for pytz"
+category = "dev"
+optional = false
+python-versions = "*"
+files = [
+    {file = "types-pytz-2023.2.0.1.tar.gz", hash = "sha256:2dd8a7667740e89ced9da99e4749327bde4c1d78b45c5c38217a296f4564b2b6"},
+    {file = "types_pytz-2023.2.0.1-py3-none-any.whl", hash = "sha256:9422758e1d506fa4b75bc3679b5cbc9ce218696a9178788464b074ff6b986e0a"},
+]
+
+[[package]]
 name = "typing-extensions"
 version = "4.5.0"
 description = "Backported and Experimental Type Hints for Python 3.7+"
@@ -1282,4 +1294,4 @@ test = ["covdefaults (>=2.2.2)", "coverage (>=7.1)", "coverage-enable-subprocess
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.11,<3.12"
-content-hash = "c2040f22c28e0fca3717cf9d3621a45a706e2b60303b00e7536a79fba2765930"
+content-hash = "851a18cc27c71de8058ea3c7418f68b60315dd35361344b6d64facff3de63cb9"
