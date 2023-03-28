@@ -10,13 +10,17 @@ from product_checker_bot import message_texts
 from product_checker_bot.handlers import bot_menus
 from product_checker_bot.db import Product, get_bot_users_and_products_db
 
+import pytz  # type: ignore
+
 
 async def _alarm(context: ContextTypes.DEFAULT_TYPE) -> None:
     """Send the alarm message."""
     job = context.job
-    product: Product = job.data
+    if not isinstance(job.data, Product):
+        raise TypeError("""job.data is not Product object""")
     if not context.bot_data["my_minio"]:
         raise ValueError("""context.bot_data["my_minio"] is None""")
+    product: Product = job.data
     # Download photo from Minio storage
     minio_photo = context.bot_data["my_minio"].get_object(
         object_name=message_texts.NAME_MINIO_OBJ.format(
@@ -62,7 +66,7 @@ def _add_first_alarm(
     context: ContextTypes.DEFAULT_TYPE,
     product: Product,
     name: str,
-    day_time_hour: int,
+    day_time_hour_utc: int,
     remaining_shelf_life_percent: int,
 ):
     """Add first alarm which will be activated when threshold of remaining shelf life reached"""
@@ -72,9 +76,10 @@ def _add_first_alarm(
     )
     # Set hour for alarm
     alarm_datetime = alarm_datetime.replace(
-        hour=day_time_hour,
+        hour=day_time_hour_utc,
         minute=0,
         second=0,
+        tzinfo=pytz.utc,
     )
     # DEBUG
     # import random
@@ -96,20 +101,23 @@ def _add_second_alarm(
     context: ContextTypes.DEFAULT_TYPE,
     product: Product,
     name: str,
-    day_time_hour: int,
+    day_time_hour_utc: int,
     alarm_repeats_hours: int,
     days_before: int,
 ):
     """Add second alarm which will be activated when expiry date reached"""
     # Set hour for alarm
     alarm_datetime = (parse(product.date_exp) - timedelta(days=days_before)).replace(
-        hour=day_time_hour, minute=0, second=0
+        hour=day_time_hour_utc,
+        minute=0,
+        second=0,
+        tzinfo=pytz.utc,
     )
     # Check when if it is already happened and next day alarm
-    datetime_now = datetime.now()
+    datetime_now = datetime.now(tz=pytz.utc)
     if alarm_datetime < datetime_now:
-        alarm_datetime = (datetime_now + timedelta(days=1)).replace(
-            hour=day_time_hour, minute=0, second=0
+        alarm_datetime = datetime_now.replace(
+            hour=day_time_hour_utc, minute=0, second=0, tzinfo=pytz.utc
         )
     context.job_queue.run_repeating(
         callback=_alarm,
@@ -127,7 +135,7 @@ def update_product_alarm(
     telegram_user_id: int,
     product: Product,
     remaining_shelf_life_percent: int = 30,
-    day_time_hour: int = 3,
+    day_time_hour_utc: int = 3,
     alarm_repeats_hours: int = 24,
     second_alarm_days_before: int = 7,
 ) -> None:
@@ -149,7 +157,7 @@ def update_product_alarm(
         context,
         product,
         first_alarm_name,
-        day_time_hour,
+        day_time_hour_utc,
         remaining_shelf_life_percent,
     )
     _remove_alarm_if_exists(second_alarm_name, context)
@@ -158,7 +166,7 @@ def update_product_alarm(
         context,
         product,
         second_alarm_name,
-        day_time_hour,
+        day_time_hour_utc,
         alarm_repeats_hours,
         second_alarm_days_before,
     )
