@@ -21,14 +21,18 @@ async def photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handler of photo messages"""
     if not update.message:
         raise ValueError("update.message is None")
+    if not update.effective_chat:
+        raise ValueError("update.effective_chat is None")
     if not isinstance(context.chat_data, Dict):
         raise ValueError("context.chat_data is None")
     if bot_menus.PREFIX_EDIT_LABEL in context.chat_data:
         try:
             await edit_photo_label(update, context)
         except ValueError:
-            await update.message.reply_text(
-                message_texts.BAD_PHOTO_UPLOAD, disable_notification=True
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text=message_texts.BAD_PHOTO_UPLOAD,
+                disable_notification=True,
             )
         finally:
             context.chat_data.pop(bot_menus.PREFIX_EDIT_LABEL)
@@ -36,8 +40,10 @@ async def photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         try:
             await photo_simple_upload(update, context)
         except ValueError:
-            await update.message.reply_text(
-                message_texts.BAD_PHOTO_UPLOAD, disable_notification=True
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text=message_texts.BAD_PHOTO_UPLOAD,
+                disable_notification=True,
             )
     if bot_menus.MAIN_MENU_FLAG not in context.chat_data:
         await bot_menus.add_main_menu(update, context)
@@ -109,7 +115,10 @@ async def photo_simple_upload(update: Update, context: ContextTypes.DEFAULT_TYPE
         raise ValueError("update.effective_chat is None")
     # Set group chat as user if message send from it
     telegram_user_id = update.effective_user.id
-    if update.effective_chat.type == constants.ChatType.GROUP:
+    if update.effective_chat.type in (
+        constants.ChatType.GROUP,
+        constants.ChatType.SUPERGROUP,
+    ):
         telegram_user_id = update.effective_chat.id
     # Get user and add new product
     cur_product, bot_user = await db.new_user_product(telegram_user_id)
@@ -166,7 +175,10 @@ async def edit_photo_label(update: Update, context: ContextTypes.DEFAULT_TYPE):
         raise ValueError("update.effective_chat is None")
     # Set group chat as user if message send from it
     telegram_user_id = update.effective_user.id
-    if update.effective_chat.type == constants.ChatType.GROUP:
+    if update.effective_chat.type in (
+        constants.ChatType.GROUP,
+        constants.ChatType.SUPERGROUP,
+    ):
         telegram_user_id = update.effective_chat.id
     prod_to_edit = context.chat_data[bot_menus.PREFIX_EDIT_LABEL]
     product_id, query = prod_to_edit

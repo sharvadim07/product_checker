@@ -25,23 +25,29 @@ async def inline_menu_button(update: Update, context: ContextTypes.DEFAULT_TYPE)
         raise ValueError("update.effective_chat is None")
     # Set group chat as user if message send from it
     telegram_user_id = update.effective_user.id
-    if update.effective_chat.type == constants.ChatType.GROUP:
+    if update.effective_chat.type in (
+        constants.ChatType.GROUP,
+        constants.ChatType.SUPERGROUP,
+    ):
         telegram_user_id = update.effective_chat.id
     await query.answer()
     # Get product id from callback data
     product_id = int(float(str(query.data).split("__")[1]))
     # Handle the selected option
     if str(query.data).startswith(bot_menus.PREFIX_EDIT_PRODUCT_DATES):
-        await query.message.reply_text(
-            message_texts.ENTER_PRODEXP_DATE, disable_notification=True
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=message_texts.ENTER_PRODEXP_DATE,
+            disable_notification=True,
         )
         await query.edit_message_reply_markup(
             reply_markup=bot_menus.edit_product_inline_menu(product_id)
         )
         context.chat_data[bot_menus.PREFIX_EDIT_PRODUCT_DATES] = (product_id, query)
     elif str(query.data).startswith(bot_menus.PREFIX_EDIT_LABEL):
-        await query.message.reply_text(
-            message_texts.SEND_NEW_LABEL_PHOTO,
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=message_texts.SEND_NEW_LABEL_PHOTO,
             disable_notification=True,
         )
         await query.edit_message_reply_markup(

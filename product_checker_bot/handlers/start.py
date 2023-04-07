@@ -19,7 +19,10 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         raise ValueError("update.effective_chat is None")
     # Set group chat as user if message send from it
     telegram_user_id = update.effective_user.id
-    if update.effective_chat.type == constants.ChatType.GROUP:
+    if update.effective_chat.type in (
+        constants.ChatType.GROUP,
+        constants.ChatType.SUPERGROUP,
+    ):
         telegram_user_id = update.effective_chat.id
     try:
         await db.get_add_bot_user(telegram_user_id)

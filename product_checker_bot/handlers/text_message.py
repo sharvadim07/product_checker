@@ -30,14 +30,19 @@ async def text_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         raise ValueError("update.effective_chat is None")
     # Set group chat as user if message send from it
     telegram_user_id = update.effective_user.id
-    if update.effective_chat.type == constants.ChatType.GROUP:
+    if update.effective_chat.type in (
+        constants.ChatType.GROUP,
+        constants.ChatType.SUPERGROUP,
+    ):
         telegram_user_id = update.effective_chat.id
     if update.message.text == message_texts.MYPROD_BUTTON:
         try:
             await show_user_products(update, context)
         except Exception:
-            await update.message.reply_text(
-                message_texts.BAD_SHOW_PRODUCTS, disable_notification=True
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text=message_texts.BAD_SHOW_PRODUCTS,
+                disable_notification=True,
             )
     elif update.message.text == message_texts.HELP_BUTTON:
         await help_(update, context)
@@ -51,8 +56,10 @@ async def text_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             cur_product = await db.get_product_db(product_id)
             alarm.update_product_alarm(context, telegram_user_id, cur_product)
         except Exception:
-            await update.message.reply_text(
-                message_texts.BAD_UPDATE_PRODUCT_DATES, disable_notification=True
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text=message_texts.BAD_UPDATE_PRODUCT_DATES,
+                disable_notification=True,
             )
         finally:
             context.chat_data.pop(bot_menus.PREFIX_EDIT_PRODUCT_DATES)
@@ -67,8 +74,10 @@ async def text_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         try:
             await delete_all_user_products(update, context)
         except Exception:
-            await update.message.reply_text(
-                message_texts.BAD_DELETE_PRODUCT_DATES, disable_notification=True
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text=message_texts.BAD_DELETE_PRODUCT_DATES,
+                disable_notification=True,
             )
         finally:
             await bot_menus.add_main_menu(update, context)
@@ -95,7 +104,10 @@ async def delete_all_user_products(update: Update, context: ContextTypes.DEFAULT
         raise ValueError("update.effective_chat is None")
     # Set group chat as user if message send from it
     telegram_user_id = update.effective_user.id
-    if update.effective_chat.type == constants.ChatType.GROUP:
+    if update.effective_chat.type in (
+        constants.ChatType.GROUP,
+        constants.ChatType.SUPERGROUP,
+    ):
         telegram_user_id = update.effective_chat.id
     bot_user = await db.get_add_bot_user(telegram_user_id)
     if not bot_user:
@@ -118,7 +130,10 @@ async def show_user_products(update: Update, context: ContextTypes.DEFAULT_TYPE)
         raise ValueError("update.effective_chat is None")
     # Set group chat as user if message send from it
     telegram_user_id = update.effective_user.id
-    if update.effective_chat.type == constants.ChatType.GROUP:
+    if update.effective_chat.type in (
+        constants.ChatType.GROUP,
+        constants.ChatType.SUPERGROUP,
+    ):
         telegram_user_id = update.effective_chat.id
     bot_user = await db.get_add_bot_user(telegram_user_id)
     if not bot_user.products:
