@@ -2,7 +2,11 @@ from typing import Tuple, Dict
 from telegram.ext import (
     ContextTypes,
 )
-from telegram import Update, CallbackQuery
+from telegram import (
+    Update,
+    CallbackQuery,
+    constants,
+)
 from product_checker_bot import message_texts
 from product_checker_bot.services.dates_recognition import check_text
 from product_checker_bot.services.dates_recognition import get_prod_exp_dates
@@ -22,6 +26,12 @@ async def text_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         raise ValueError("update.effective_user is None")
     if not isinstance(context.chat_data, Dict):
         raise ValueError("context.chat_data is None")
+    if not update.effective_chat:
+        raise ValueError("update.effective_chat is None")
+    # Set group chat as user if message send from it
+    telegram_user_id = update.effective_user.id
+    if update.effective_chat.type == constants.ChatType.GROUP:
+        telegram_user_id = update.effective_chat.id
     if update.message.text == message_texts.MYPROD_BUTTON:
         try:
             await show_user_products(update, context)
@@ -39,7 +49,7 @@ async def text_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             product_id, _ = prod_to_edit
             # Update product alarm
             cur_product = await db.get_product_db(product_id)
-            alarm.update_product_alarm(context, update.effective_user.id, cur_product)
+            alarm.update_product_alarm(context, telegram_user_id, cur_product)
         except Exception:
             await update.message.reply_text(
                 message_texts.BAD_UPDATE_PRODUCT_DATES, disable_notification=True
@@ -81,7 +91,13 @@ async def text_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def delete_all_user_products(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Removing all user products from DB and remove linked alarms"""
-    bot_user = await db.get_add_bot_user(update.effective_user.id)
+    if not update.effective_chat:
+        raise ValueError("update.effective_chat is None")
+    # Set group chat as user if message send from it
+    telegram_user_id = update.effective_user.id
+    if update.effective_chat.type == constants.ChatType.GROUP:
+        telegram_user_id = update.effective_chat.id
+    bot_user = await db.get_add_bot_user(telegram_user_id)
     if not bot_user:
         raise ValueError("bot_user is None")
     if not bot_user.products:
@@ -91,7 +107,7 @@ async def delete_all_user_products(update: Update, context: ContextTypes.DEFAULT
         alarm.remove_product_alarm(
             context, bot_user.telegram_user_id, cur_product.product_id
         )
-    await db.remove_all_products_db(update.effective_user.id)
+    await db.remove_all_products_db(telegram_user_id)
 
 
 async def show_user_products(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -100,7 +116,11 @@ async def show_user_products(update: Update, context: ContextTypes.DEFAULT_TYPE)
         raise ValueError("update.effective_user is None")
     if not update.effective_chat:
         raise ValueError("update.effective_chat is None")
-    bot_user = await db.get_add_bot_user(update.effective_user.id)
+    # Set group chat as user if message send from it
+    telegram_user_id = update.effective_user.id
+    if update.effective_chat.type == constants.ChatType.GROUP:
+        telegram_user_id = update.effective_chat.id
+    bot_user = await db.get_add_bot_user(telegram_user_id)
     if not bot_user.products:
         raise ValueError("bot_user.products is None")
     # Iterate other user products

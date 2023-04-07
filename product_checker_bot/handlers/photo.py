@@ -5,11 +5,7 @@ from io import BytesIO
 from telegram.ext import (
     ContextTypes,
 )
-from telegram import (
-    Update,
-    Message,
-    InputMediaPhoto,
-)
+from telegram import Update, Message, InputMediaPhoto, constants
 
 from product_checker_bot import message_texts
 from product_checker_bot.config import config
@@ -107,12 +103,16 @@ async def photo_simple_upload(update: Update, context: ContextTypes.DEFAULT_TYPE
     """Function for handle action when user sends photo"""
     if not update.effective_user:
         raise ValueError("update.effective_user is None")
-    if not update.effective_chat:
-        raise ValueError("update.effective_chat is None")
     if not update.message:
         raise ValueError("update.message is None")
+    if not update.effective_chat:
+        raise ValueError("update.effective_chat is None")
+    # Set group chat as user if message send from it
+    telegram_user_id = update.effective_user.id
+    if update.effective_chat.type == constants.ChatType.GROUP:
+        telegram_user_id = update.effective_chat.id
     # Get user and add new product
-    cur_product, bot_user = await db.new_user_product(update.effective_user.id)
+    cur_product, bot_user = await db.new_user_product(telegram_user_id)
     minio_res, downloaded_photo = await photo_label_update(
         update=update,
         context=context,
@@ -162,10 +162,16 @@ async def edit_photo_label(update: Update, context: ContextTypes.DEFAULT_TYPE):
         raise ValueError("context.chat_data is None")
     if not update.message:
         raise ValueError("update.message is None")
+    if not update.effective_chat:
+        raise ValueError("update.effective_chat is None")
+    # Set group chat as user if message send from it
+    telegram_user_id = update.effective_user.id
+    if update.effective_chat.type == constants.ChatType.GROUP:
+        telegram_user_id = update.effective_chat.id
     prod_to_edit = context.chat_data[bot_menus.PREFIX_EDIT_LABEL]
     product_id, query = prod_to_edit
     # Get user
-    bot_user = await db.get_add_bot_user(update.effective_user.id)
+    bot_user = await db.get_add_bot_user(telegram_user_id)
     cur_product = await db.get_product_db(product_id)
     if not cur_product:
         raise ValueError("cur_product is None")
