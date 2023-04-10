@@ -169,6 +169,8 @@ async def show_user_products(update: Update, context: ContextTypes.DEFAULT_TYPE)
                     date_exp=cur_product.date_exp,
                     label_path=cur_product.label_path,
                 ),
+                write_timeout=20,
+                read_timeout=20,
             )
 
 

@@ -5,8 +5,9 @@ import json
 import urllib3
 from io import BytesIO
 
-urllib3.disable_warnings()
 from minio.commonconfig import Tags
+
+urllib3.disable_warnings()
 
 
 class MyMinioClient:
