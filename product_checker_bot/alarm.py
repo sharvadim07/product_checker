@@ -38,6 +38,8 @@ async def _alarm(context: ContextTypes.DEFAULT_TYPE) -> None:
                 date_exp=product.date_exp,
                 label_path=product.label_path,
             ),
+            write_timeout=20,
+            read_timeout=20,
         )
 
 

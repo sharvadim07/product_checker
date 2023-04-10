@@ -101,6 +101,8 @@ async def replace_user_product_photo(
             date_exp=cur_product.date_exp,
             label_path=cur_product.label_path,
         ),
+        write_timeout=20,
+        read_timeout=20,
     )
     return product_message
 
