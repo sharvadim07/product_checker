@@ -18,6 +18,7 @@ The app realized as Telegram bot.
 - Delete all products;
 - Send notification to user when some product about the end of expiry date;
 - Sort products list by their expiration;
+- Ability to add bot in group chat (please add grants for sending mesages for it);
 
 
 ## TODO:
