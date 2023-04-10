@@ -21,25 +21,24 @@ async def _alarm(context: ContextTypes.DEFAULT_TYPE) -> None:
     if not context.bot_data["my_minio"]:
         raise ValueError("""context.bot_data["my_minio"] is None""")
     product: Product = job.data
-    # Download photo from Minio storage
-    minio_photo = context.bot_data["my_minio"].get_object(
-        object_name=message_texts.NAME_MINIO_OBJ.format(
-            telegram_user_id=job.user_id, product_id=product.product_id
+    if product.label_path:
+        # Download photo from Minio storage
+        minio_photo = context.bot_data["my_minio"].get_object(
+            object_name=product.label_path
         )
-    )
-    await context.bot.send_photo(
-        chat_id=job.chat_id,
-        photo=minio_photo.data,
-        disable_notification=True,
-        reply_markup=bot_menus.edit_product_inline_menu(product.product_id),
-        caption=message_texts.PRODUCT_INFO_REMAIN_LIFE.format(
-            remain_shelf_life_percent=product.remaining_shelf_life_percent(),
-            product_id=product.product_id,
-            date_prod=product.date_prod,
-            date_exp=product.date_exp,
-            label_path=product.label_path,
-        ),
-    )
+        await context.bot.send_photo(
+            chat_id=job.chat_id,
+            photo=minio_photo.data,
+            disable_notification=True,
+            reply_markup=bot_menus.edit_product_inline_menu(product.product_id),
+            caption=message_texts.PRODUCT_INFO_REMAIN_LIFE.format(
+                remain_shelf_life_percent=product.remaining_shelf_life_percent(),
+                product_id=product.product_id,
+                date_prod=product.date_prod,
+                date_exp=product.date_exp,
+                label_path=product.label_path,
+            ),
+        )
 
 
 def _check_alarm_exists(name: str, context: ContextTypes.DEFAULT_TYPE) -> bool:

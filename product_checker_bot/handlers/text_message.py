@@ -143,10 +143,7 @@ async def show_user_products(update: Update, context: ContextTypes.DEFAULT_TYPE)
         if cur_product.label_path:
             # Download photo from Minio storage
             minio_photo = context.bot_data["my_minio"].get_object(
-                object_name=message_texts.NAME_MINIO_OBJ.format(
-                    telegram_user_id=bot_user.telegram_user_id,
-                    product_id=cur_product.product_id,
-                )
+                object_name=cur_product.label_path
             )
             # Resize image from minio
             # # create a BytesIO object to hold the byte stream
