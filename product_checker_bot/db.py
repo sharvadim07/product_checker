@@ -21,23 +21,25 @@ class Product:
     def shelf_life_days(self) -> Optional[int]:
         if self.date_exp:
             if self.date_prod:
-                return (parse(self.date_exp) - parse(self.date_prod)).days
+                return (parse(self.date_exp).date() - parse(self.date_prod).date()).days
             else:
-                return (parse(self.date_exp) - parse(self.created_at)).days
+                return (
+                    parse(self.date_exp).date() - parse(self.created_at).date()
+                ).days
         else:
             return None
 
     def remaining_shelf_life_days(self) -> Optional[int]:
         if self.date_exp:
-            return (parse(self.date_exp) - datetime.now()).days
+            return (parse(self.date_exp).date() - datetime.now().date()).days
         else:
             return None
 
-    def remaining_shelf_life_percent(self) -> Optional[int]:
+    def remaining_shelf_life_percent(self) -> Optional[float]:
         shelf_life_days = self.shelf_life_days()
         remaining_shelf_life_days = self.remaining_shelf_life_days()
-        if shelf_life_days and remaining_shelf_life_days:
-            return round((remaining_shelf_life_days / shelf_life_days) * 100)
+        if shelf_life_days is not None and remaining_shelf_life_days is not None:
+            return round((remaining_shelf_life_days / shelf_life_days) * 100, 1)
         else:
             return None
 

@@ -67,7 +67,7 @@ def _add_first_alarm(
     product: Product,
     name: str,
     day_time_hour_utc: int,
-    remaining_shelf_life_percent: int,
+    remaining_shelf_life_percent: float,
 ):
     """Add first alarm which will be activated when threshold of remaining shelf life reached"""
     shelf_life_days = product.shelf_life_days()
@@ -134,7 +134,7 @@ def update_product_alarm(
     context: ContextTypes.DEFAULT_TYPE,
     telegram_user_id: int,
     product: Product,
-    remaining_shelf_life_percent: int = 30,
+    remaining_shelf_life_percent: float = 30.0,
     day_time_hour_utc: int = 3,
     alarm_repeats_hours: int = 24,
     second_alarm_days_before: int = 7,

@@ -82,19 +82,23 @@ def _yes_no_menu():
 
 
 # Define the function to create the menu
-async def _init_main_menu(update: Update):
-    if not update.message:
-        raise ValueError("update.message is None")
-    await update.message.reply_text(
-        message_texts.PRESS_MENU, reply_markup=_main_menu(), disable_notification=True
+async def _init_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.effective_chat:
+        raise ValueError("update.effective_chat is None")
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text=message_texts.PRESS_MENU,
+        reply_markup=_main_menu(),
+        disable_notification=True,
     )
 
 
-async def _init_yes_no_menu(update: Update):
-    if not update.message:
-        raise ValueError("update.message is None")
-    await update.message.reply_text(
-        message_texts.ARE_YOU_SURE,
+async def _init_yes_no_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.effective_chat:
+        raise ValueError("update.effective_chat is None")
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text=message_texts.ARE_YOU_SURE,
         reply_markup=_yes_no_menu(),
         disable_notification=True,
     )
@@ -104,7 +108,7 @@ async def _init_yes_no_menu(update: Update):
 async def add_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not isinstance(context.chat_data, Dict):
         raise ValueError("context.chat_data is None")
-    await _init_main_menu(update)
+    await _init_main_menu(update, context)
     if YES_NO_MENU_FLAG in context.chat_data:
         context.chat_data[YES_NO_MENU_FLAG] = False
     context.chat_data[MAIN_MENU_FLAG] = True
@@ -113,7 +117,7 @@ async def add_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def add_yes_no_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not isinstance(context.chat_data, Dict):
         raise ValueError("context.chat_data is None")
-    await _init_yes_no_menu(update)
+    await _init_yes_no_menu(update, context)
     if MAIN_MENU_FLAG in context.chat_data:
         context.chat_data[MAIN_MENU_FLAG] = False
     context.chat_data[YES_NO_MENU_FLAG] = True

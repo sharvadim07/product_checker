@@ -14,7 +14,8 @@ What's user can do:
 - Delete product;
 - Delete all products;
 - Send notification to user when some product about the end of expiry date;
-- Sort products list by their expiration;"""
+- Sort products list by their expiration;
+- Ability to add bot in group chat (please add grants for sending mesages for it);"""
 
 HELP = """What's user can do:
 1. Enter /start command to start bot with greetings message and description;
@@ -27,7 +28,8 @@ HELP = """What's user can do:
 - Delete product;
 - Delete all products;
 - Send notification to user when some product about the end of expiry date;
-- Sort products list by their expiration;"""
+- Sort products list by their expiration;
+- Ability to add bot in group chat (please add grants for sending mesages for it);"""
 
 PRODUCT_INFO = """Product id: {product_id}
 PROD: {date_prod}
