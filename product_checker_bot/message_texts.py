@@ -9,12 +9,11 @@ What's user can do:
 3. After 1st action or 2nd action use the menu's buttons for communication with bot.
 
 - Show all products list with their information;
+- Sort products list by their expiration;
 - Change dates of production and expiration for product;
 - Change label for product;
-- Delete product;
-- Delete all products;
+- Delete product/all products;
 - Send notification to user when some product about the end of expiry date;
-- Sort products list by their expiration;
 - Ability to add bot in group chat (please add grants for sending mesages for it);"""
 
 HELP = """What's user can do:
@@ -23,12 +22,11 @@ HELP = """What's user can do:
 3. After 1st action or 2nd action use the menu's buttons for communication with bot.
 
 - Show all products list with their information;
+- Sort products list by their expiration;
 - Change dates of production and expiration for product;
 - Change label for product;
-- Delete product;
-- Delete all products;
+- Delete product/all products;
 - Send notification to user when some product about the end of expiry date;
-- Sort products list by their expiration;
 - Ability to add bot in group chat (please add grants for sending mesages for it);"""
 
 PRODUCT_INFO = """Product id: {product_id}

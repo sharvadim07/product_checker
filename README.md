@@ -12,14 +12,12 @@ The app realized as Telegram bot.
 
 ## Bot abilities:
 - Show all products list with their information;
+- Sort products list by their expiration;
 - Change dates of production and expiration for product;
 - Change label for product;
-- Delete product;
-- Delete all products;
+- Delete product/all products;
 - Send notification to user when some product about the end of expiry date;
-- Sort products list by their expiration;
 - Ability to add bot in group chat (please add grants for sending mesages for it);
-
 
 ## TODO:
 - Testing and debugging;
