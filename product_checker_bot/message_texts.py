@@ -1,13 +1,14 @@
 GREETNGS = """Hello {username}, it is product checker bot.
-I can generate and store information about your products (e.g. food from the supermarket)
- from their photos.
-So I can send notifications about the end of expiry date.
+I can generate and store information about the products
+using automatic dates recognition (e.g. food from the supermarket) from their photos.
+So I can send notifications about their shelf life end of expiry date.
 
 What's user can do:
 1. Enter /start command to start bot with greetings message and description;
 2. Send <photo> of one of your products with dates of prdouction and expiration;
 3. After 1st action or 2nd action use the menu's buttons for communication with bot.
 
+- Recognise dates of production and expiration from photo of product where these dates printed;
 - Show all products list with their information;
 - Sort products list by their expiration;
 - Change dates of production and expiration for product;
@@ -21,6 +22,7 @@ HELP = """What's user can do:
 2. Send <photo> of one of your products with dates of prdouction and expiration;
 3. After 1st action or 2nd action use the menu's buttons for communication with bot.
 
+- Recognise dates of production and expiration from photo of product where these dates printed;
 - Show all products list with their information;
 - Sort products list by their expiration;
 - Change dates of production and expiration for product;
