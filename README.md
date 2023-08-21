@@ -8,7 +8,7 @@ So it can send notifications about their shelf life end of expiry date.
 
 ## What's user can do:
 1. Enter /start command to start bot with greetings message and description;
-2. Send photo of one of your products with dates of prdouction and expiration;
+2. Send photo of one of your products with dates of production and expiration;
 3. After 1st action or 2nd action use the menu's buttons for communication with bot.
 
 ## Bot abilities:
